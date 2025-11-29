@@ -66,11 +66,11 @@ const Dashboard = () => {
   const isAdmin = user.role === 'Administrator';
 
   const menuItems = [
-    { icon: Package, label: 'Produtos', description: 'Gerenciar catálogo' },
-    { icon: Users, label: 'Clientes', description: 'Base de clientes' },
-    { icon: BarChart3, label: 'Relatórios', description: 'Análises e métricas' },
-    { icon: Truck, label: 'Envios', description: 'Logística e entregas' },
-    { icon: Settings, label: 'Configurações', description: 'Preferências do sistema' },
+    { icon: Package, label: 'Produtos', description: 'Gerenciar catálogo', href: '/products' },
+    { icon: Users, label: 'Clientes', description: 'Base de clientes', href: '#' },
+    { icon: BarChart3, label: 'Relatórios', description: 'Análises e métricas', href: '#' },
+    { icon: Truck, label: 'Envios', description: 'Logística e entregas', href: '#' },
+    { icon: Settings, label: 'Configurações', description: 'Preferências do sistema', href: '#' },
   ];
 
   return (
@@ -127,7 +127,7 @@ const Dashboard = () => {
                 <p className="text-sm text-muted-foreground">Gerencie usuários do sistema</p>
               </div>
             </div>
-            <Button asChild variant="glow">
+            <Button asChild>
               <Link to="/register">
                 <UserPlus className="w-4 h-4" />
                 Registrar Novo Usuário
@@ -139,13 +139,14 @@ const Dashboard = () => {
         {/* Menu Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {menuItems.map((item, index) => (
-            <div
+            <Link
               key={item.label}
-              className="glass-card p-6 rounded-2xl hover:border-primary/30 transition-all duration-300 cursor-pointer group animate-fade-in"
+              to={item.href}
+              className="glass-card p-6 rounded-xl hover:border-primary/30 transition-all duration-200 group animate-fade-in hover-lift"
               style={{ animationDelay: `${(index + 2) * 0.1}s` }}
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-secondary group-hover:bg-primary/10 transition-colors">
+                <div className="p-3 rounded-lg bg-secondary group-hover:bg-primary/10 transition-colors">
                   <item.icon className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <div>
@@ -153,7 +154,7 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">{item.description}</p>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

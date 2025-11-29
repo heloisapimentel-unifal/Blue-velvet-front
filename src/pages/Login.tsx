@@ -113,7 +113,7 @@ const Login = () => {
             </div>
 
             {/* Submit Button */}
-            <Button type="submit" variant="glow" size="lg" className="w-full" disabled={isLoading}>
+            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
