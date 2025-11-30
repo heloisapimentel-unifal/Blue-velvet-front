@@ -108,7 +108,7 @@ const Login = () => {
                 onCheckedChange={(checked) => setRemember(checked as boolean)}
               />
               <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
-                Lembrar credenciais
+                Lembrar credenciais 
               </Label>
             </div>
 
@@ -127,11 +127,8 @@ const Login = () => {
 
           {/* Register Link */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem uma conta?{' '}
-            <Link to="/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Registre-se
-            </Link>
-          </p>
+  Não tem uma conta? Entre em contato com um administrador da empresa.
+</p>
         </div>
 
         {/* Demo Credentials */}

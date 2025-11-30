@@ -15,6 +15,7 @@ import {
   Plus,
   Search,
   ArrowLeft,
+  List, // 👈 Novo: Importação do ícone List/Categorias
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, ProductFormData, initialProducts, categories } from '@/types/product';
@@ -230,10 +231,23 @@ const Products = () => {
               className="pl-10"
             />
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="w-4 h-4" />
-            Novo Produto
-          </Button>
+          
+          {/* 👈 Botões de Ação Agrupados */}
+          <div className="flex gap-3">
+            {/* Botão de Categorias */}
+            <Button variant="outline" asChild>
+                <Link to="/categories">
+                    <List className="w-4 h-4 mr-2" />
+                    Categorias
+                </Link>
+            </Button>
+            {/* Botão de Novo Produto */}
+            <Button onClick={openCreateDialog}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Produto
+            </Button>
+          </div>
+          
         </div>
 
         {/* Products Table */}

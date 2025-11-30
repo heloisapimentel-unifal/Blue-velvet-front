@@ -67,10 +67,7 @@ const Dashboard = () => {
 
   const menuItems = [
     { icon: Package, label: 'Produtos', description: 'Gerenciar catálogo', href: '/products' },
-    { icon: Users, label: 'Clientes', description: 'Base de clientes', href: '#' },
-    { icon: BarChart3, label: 'Relatórios', description: 'Análises e métricas', href: '#' },
-    { icon: Truck, label: 'Envios', description: 'Logística e entregas', href: '#' },
-    { icon: Settings, label: 'Configurações', description: 'Preferências do sistema', href: '#' },
+    { icon: Settings, label: 'Categorias', description: 'Gerenciar categorias', href: '/categories' },
   ];
 
   return (

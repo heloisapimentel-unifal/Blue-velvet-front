@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Mail, Lock, User, AlertCircle, Loader2, CheckCircle, UserCog } from 'lucide-react';
+import { Shield, Mail, Lock, User, AlertCircle, Loader2, CheckCircle, UserCog, ArrowLeft } from 'lucide-react';
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: 'Administrator', label: 'Administrador' },
@@ -79,6 +79,17 @@ const Register = () => {
       </div>
 
       <div className="w-full max-w-md px-6 animate-fade-in relative z-10">
+        
+        {/* Botão de Retorno ao Dashboard (Visível apenas se for Admin) */}
+        {isAdmin && (
+          <div className="absolute top-4 left-4 sm:static sm:mb-4 sm:flex sm:justify-end">
+            <Button variant="ghost" className="text-muted-foreground p-2 h-auto" onClick={() => navigate('/dashboard')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao Dashboard
+            </Button>
+          </div>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
