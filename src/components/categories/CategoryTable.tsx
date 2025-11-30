@@ -8,8 +8,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Pencil, Trash2, Check, X, Tag } from 'lucide-react';
-import { Category } from '@/types/category'; // Importa o tipo Category
-import { useMemo } from 'react'; // Usaremos useMemo
+import { Category, getCategoryImageUrl } from '@/types/category'; // 👈 Importando getCategoryImageUrl
+import { useMemo } from 'react';
 
 interface CategoryTableProps {
   categories: Category[];
@@ -65,8 +65,7 @@ const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTableProps) => 
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead>Nome da Categoria</TableHead>
-            {/* REMOVIDO: Coluna Nome do Arquivo da Imagem */}
+            <TableHead>Categoria</TableHead> {/* Célula combinada: Imagem, Hierarquia e Nome */}
             <TableHead className="text-center w-[120px]">Status</TableHead>
             <TableHead className="text-right w-[100px]">Ações</TableHead>
           </TableRow>
@@ -74,7 +73,7 @@ const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTableProps) => 
         <TableBody>
           {hierarchicalCategories.length === 0 ? (
             <TableRow>
-              {/* Ajustado colSpan para 3 colunas (Nome, Status, Ações) */}
+              {/* Ajustado colSpan para 3 colunas */}
               <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
                 Nenhuma categoria encontrada.
               </TableCell>
@@ -82,19 +81,35 @@ const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTableProps) => 
           ) : (
             hierarchicalCategories.map((category) => (
               <TableRow key={category.id} className="group">
-                <TableCell className="font-medium text-foreground">
-                  {/* Indentação baseada no nível hierárquico */}
+                
+                {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia) */}
+                <TableCell className="font-medium text-foreground py-2">
                   <div 
-                    className="flex items-center gap-2" 
+                    className="flex items-center gap-3" 
+                    // Aplica a indentação na div externa para mover o conteúdo todo
                     style={{ paddingLeft: `${category.level * 20}px` }} 
                   >
-                     <Tag className={`w-4 h-4 ${category.level === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
-                     {category.level > 0 && <span className="text-muted-foreground mr-1">—</span>}
-                     {category.name}
+                    {/* Imagem */}
+                    <img 
+                        src={getCategoryImageUrl(category.imageFilename)}
+                        alt={`Imagem de ${category.name}`}
+                        className="w-10 h-10 object-cover rounded-md border border-border flex-shrink-0"
+                        // Adiciona fallback para caso as imagens 'jorge' não carreguem
+                        onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/images/placeholder.png'; 
+                            target.onerror = null;
+                        }}
+                    />
+                    
+                    {/* Texto com Ícone e Nome */}
+                    <div className="flex items-center">
+                        <Tag className={`w-4 h-4 mr-2 ${category.level === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
+                        {category.level > 0 && <span className="text-muted-foreground mr-1">—</span>}
+                        {category.name}
+                    </div>
                   </div>
                 </TableCell>
-                
-                {/* REMOVIDO: Célula Nome do Arquivo da Imagem */}
                 
                 <TableCell className="text-center">
                   <span 
