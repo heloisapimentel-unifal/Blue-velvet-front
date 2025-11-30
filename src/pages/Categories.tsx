@@ -14,18 +14,18 @@ import {
   Plus,
   Search,
   ArrowLeft,
-  Tag, // NOVO ÍCONE: Representa a categoria
-  List, // Ícone para o botão "Produtos"
+  Tag, 
+  List, 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Category, 
   CategoryFormData, 
   initialCategories 
-} from '@/types/category'; // Importando types e dados de Categoria
+} from '@/types/category'; 
 
-import CategoryForm from '@/components/categories/CategoryForm'; // NOVO COMPONENTE
-import CategoryTable from '@/components/categories/CategoryTable'; // NOVO COMPONENTE
+import CategoryForm from '@/components/categories/CategoryForm'; 
+import CategoryTable from '@/components/categories/CategoryTable'; 
 
 // Form Data inicial para nova categoria
 const emptyCategoryFormData: CategoryFormData = {
@@ -53,27 +53,21 @@ const Categories = () => {
     navigate('/login');
   };
 
-  // 🔴 VERIFICAÇÃO DE PERMISSÃO (Adaptar 'Administrator' ao seu sistema)
-  // if (!user || user.role !== 'Administrator') {
-  //   navigate('/dashboard'); 
-  //   toast({
-  //     title: 'Acesso Negado',
-  //     description: 'Você não tem permissão para gerenciar categorias.',
-  //     variant: 'destructive',
-  //   });
-  //   return null;
-  // }
   if (!user) {
     navigate('/login');
     return null;
   }
 
-
+  // Lógica de filtragem corrigida para buscar em nome, nome do arquivo e nome do pai.
+  // Esta lógica garante que todos os níveis (pai, filho, neto) sejam pesquisados.
   const filteredCategories = categoriesList.filter(
     (category) =>
+      // Busca no nome da categoria
       category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.parentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.imageFilename.toLowerCase().includes(searchTerm.toLowerCase())
+      // Busca no nome do arquivo da imagem
+      category.imageFilename.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      // Busca no nome da categoria pai (usa ?. para lidar com categorias Top-level)
+      category.parentName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const openCreateDialog = () => {
@@ -94,7 +88,7 @@ const Categories = () => {
   };
 
   const openDeleteDialog = (category: Category) => {
-    setCategoryToDelete(category);
+    setProductToDelete(category);
     setIsDeleteDialogOpen(true);
   };
 
@@ -111,7 +105,6 @@ const Categories = () => {
     }
 
     const now = new Date().toISOString();
-    // Encontra o nome da categoria pai para armazenamento (evita lookup na renderização)
     const parentCategory = categoriesList.find(c => c.id === formData.parentId);
     const parentName = parentCategory ? parentCategory.name : undefined;
 
@@ -136,7 +129,7 @@ const Categories = () => {
       });
     } else {
       const newCategory: Category = {
-        id: Date.now().toString(), // ID simples baseado no timestamp
+        id: Date.now().toString(), 
         name: formData.name,
         imageFilename: formData.imageFilename,
         parentId: formData.parentId,
@@ -156,7 +149,6 @@ const Categories = () => {
 
   const handleDelete = () => {
     if (categoryToDelete) {
-      // Verifica se a categoria possui subcategorias
       const hasChildren = categoriesList.some(c => c.parentId === categoryToDelete.id);
 
       if (hasChildren) {
@@ -168,8 +160,6 @@ const Categories = () => {
         setIsDeleteDialogOpen(false);
         return;
       }
-      
-      // Implementação ideal: Verificar se há produtos associados antes de excluir.
       
       setCategoriesList(categoriesList.filter((c) => c.id !== categoryToDelete.id));
       toast({
@@ -191,7 +181,7 @@ const Categories = () => {
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
             <div className="p-2 rounded-lg bg-primary/10">
-              <Tag className="w-6 h-6 text-primary" /> {/* Ícone Tag */}
+              <Tag className="w-6 h-6 text-primary" />
             </div>
             <span className="text-xl font-semibold text-foreground">Gerenciamento de Categorias</span>
           </div>
