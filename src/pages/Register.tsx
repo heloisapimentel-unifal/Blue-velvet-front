@@ -72,6 +72,18 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+      {/* Botão de Retorno ao Dashboard - Canto Superior Esquerdo */}
+      {isAdmin && (
+        <Button 
+          variant="ghost" 
+          className="absolute top-6 left-6 z-20 text-muted-foreground hover:text-foreground hover:bg-secondary/80 gap-2 transition-all duration-200" 
+          onClick={() => navigate('/dashboard')}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Voltar ao Dashboard</span>
+        </Button>
+      )}
+
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
@@ -79,17 +91,6 @@ const Register = () => {
       </div>
 
       <div className="w-full max-w-md px-6 animate-fade-in relative z-10">
-        
-        {/* Botão de Retorno ao Dashboard (Visível apenas se for Admin) */}
-        {isAdmin && (
-          <div className="absolute top-4 left-4 sm:static sm:mb-4 sm:flex sm:justify-end">
-            <Button variant="ghost" className="text-muted-foreground p-2 h-auto" onClick={() => navigate('/dashboard')}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar ao Dashboard
-            </Button>
-          </div>
-        )}
-
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
