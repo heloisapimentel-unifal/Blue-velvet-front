@@ -2,16 +2,19 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { 
-  Shield, 
+  Music, 
   LogOut, 
   User, 
   Package, 
   Users, 
-  Settings, 
+  Tag, 
   BarChart3,
   Truck,
   FileEdit,
-  UserPlus
+  UserPlus,
+  Disc3,
+  Guitar,
+  Shield
 } from 'lucide-react';
 
 const getRoleIcon = (role: string) => {
@@ -66,20 +69,29 @@ const Dashboard = () => {
   const isAdmin = user.role === 'Administrator';
 
   const menuItems = [
-    { icon: Package, label: 'Produtos', description: 'Gerenciar catálogo', href: '/products' },
-    { icon: Settings, label: 'Categorias', description: 'Gerenciar categorias', href: '/categories' },
+    { icon: Guitar, label: 'Produtos', description: 'Gerenciar catálogo de instrumentos', href: '/products' },
+    { icon: Tag, label: 'Categorias', description: 'Organizar categorias musicais', href: '/categories' },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background musical decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <Disc3 className="absolute top-40 right-[5%] w-20 h-20 text-primary/5 animate-spin" style={{ animationDuration: '15s' }} />
+        <Music className="absolute bottom-20 left-[8%] w-10 h-10 text-primary/5" />
+      </div>
+
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="w-6 h-6 text-primary" />
+              <Music className="w-6 h-6 text-primary" />
             </div>
-            <span className="text-xl font-semibold text-foreground">Admin Portal</span>
+            <div className="flex flex-col">
+              <span className="text-xl font-semibold text-foreground leading-tight">Blue Velvet</span>
+              <span className="text-xs text-primary/70 tracking-widest uppercase">Management</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -101,14 +113,14 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8 relative z-10">
         {/* Welcome Section */}
         <div className="mb-8 animate-fade-in">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Bem-vindo, {user.name.split(' ')[0]}!
           </h1>
           <p className="text-muted-foreground">
-            Gerencie seus produtos e equipe a partir deste painel.
+            Gerencie o catálogo da Blue Velvet Music Store.
           </p>
         </div>
 

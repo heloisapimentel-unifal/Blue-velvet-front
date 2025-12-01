@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Mail, Lock, User, AlertCircle, Loader2, CheckCircle, UserCog, ArrowLeft } from 'lucide-react';
+import { Shield, Mail, Lock, User, AlertCircle, Loader2, CheckCircle, Music, ArrowLeft, Disc3 } from 'lucide-react';
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: 'Administrator', label: 'Administrador' },
@@ -84,19 +84,22 @@ const Register = () => {
         </Button>
       )}
 
-      {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Background musical elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-1/3 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
+        <Disc3 className="absolute top-24 right-[12%] w-10 h-10 text-primary/10 animate-spin" style={{ animationDuration: '10s' }} />
+        <Music className="absolute bottom-28 left-[8%] w-8 h-8 text-primary/10" />
       </div>
 
       <div className="w-full max-w-md px-6 animate-fade-in relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <UserCog className="w-8 h-8 text-primary" />
+            <Music className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Registrar Usuário</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-1">Registrar Usuário</h1>
+          <p className="text-xs font-medium text-primary/70 tracking-widest uppercase mb-2">Blue Velvet</p>
           <p className="text-muted-foreground">Cadastre um novo membro da equipe</p>
         </div>
 
