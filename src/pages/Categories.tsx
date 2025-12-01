@@ -58,17 +58,54 @@ const Categories = () => {
     return null;
   }
 
-  // Lógica de filtragem corrigida para buscar em nome, nome do arquivo e nome do pai.
-  // Esta lógica garante que todos os níveis (pai, filho, neto) sejam pesquisados.
-  const filteredCategories = categoriesList.filter(
-    (category) =>
-      // Busca no nome da categoria
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      // Busca no nome do arquivo da imagem
-      category.imageFilename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      // Busca no nome da categoria pai (usa ?. para lidar com categorias Top-level)
-      category.parentName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Função auxiliar para verificar se uma categoria é ancestral de outra
+  const isAncestorOf = (ancestorId: string, categoryId: string): boolean => {
+    const category = categoriesList.find(c => c.id === categoryId);
+    if (!category || !category.parentId) return false;
+    if (category.parentId === ancestorId) return true;
+    return isAncestorOf(ancestorId, category.parentId);
+  };
+
+  // Lógica de filtragem que mantém a hierarquia correta
+  const filteredCategories = (() => {
+    if (!searchTerm.trim()) return categoriesList;
+    
+    const lowerSearch = searchTerm.toLowerCase();
+    
+    // Primeiro, encontra todas as categorias que correspondem diretamente à busca
+    const directMatches = new Set<string>();
+    categoriesList.forEach(category => {
+      if (
+        category.name.toLowerCase().includes(lowerSearch) ||
+        category.imageFilename.toLowerCase().includes(lowerSearch)
+      ) {
+        directMatches.add(category.id);
+      }
+    });
+
+    // Adiciona todos os descendentes das categorias que correspondem
+    const matchesWithDescendants = new Set(directMatches);
+    categoriesList.forEach(category => {
+      for (const matchId of directMatches) {
+        if (isAncestorOf(matchId, category.id)) {
+          matchesWithDescendants.add(category.id);
+        }
+      }
+    });
+
+    // Adiciona todos os ancestrais das categorias que correspondem (para manter contexto)
+    const finalMatches = new Set(matchesWithDescendants);
+    const addAncestors = (categoryId: string) => {
+      const category = categoriesList.find(c => c.id === categoryId);
+      if (category?.parentId) {
+        finalMatches.add(category.parentId);
+        addAncestors(category.parentId);
+      }
+    };
+    matchesWithDescendants.forEach(id => addAncestors(id));
+
+    return categoriesList.filter(c => finalMatches.has(c.id));
+  })();
 
   const openCreateDialog = () => {
     setEditingCategory(null);
@@ -88,7 +125,7 @@ const Categories = () => {
   };
 
   const openDeleteDialog = (category: Category) => {
-    setProductToDelete(category);
+    setCategoryToDelete(category);
     setIsDeleteDialogOpen(true);
   };
 
