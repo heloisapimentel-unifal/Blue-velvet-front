@@ -69,8 +69,8 @@ const Dashboard = () => {
   const isAdmin = user.role === 'Administrator';
 
   const menuItems = [
-    { icon: Guitar, label: 'Produtos', description: 'Gerenciar catálogo de instrumentos', href: '/products' },
-    { icon: Tag, label: 'Categorias', description: 'Organizar categorias musicais', href: '/categories' },
+    { icon: Guitar, label: 'Produtos', description: 'Gerenciar catálogo', href: '/products' },
+    { icon: Tag, label: 'Categorias', description: 'Gerenciar categorias', href: '/categories' },
   ];
 
   return (
