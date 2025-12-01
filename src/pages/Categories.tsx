@@ -211,13 +211,7 @@ const Categories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background musical decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <Disc3 className="absolute top-36 right-[4%] w-14 h-14 text-primary/5 animate-spin" style={{ animationDuration: '10s' }} />
-        <Music className="absolute bottom-28 left-[6%] w-8 h-8 text-primary/5" />
-      </div>
-
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">

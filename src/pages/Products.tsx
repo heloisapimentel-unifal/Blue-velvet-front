@@ -195,13 +195,7 @@ const Products = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background musical decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <Disc3 className="absolute top-32 right-[3%] w-16 h-16 text-primary/5 animate-spin" style={{ animationDuration: '12s' }} />
-        <Music className="absolute bottom-24 left-[5%] w-8 h-8 text-primary/5" />
-      </div>
-
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">

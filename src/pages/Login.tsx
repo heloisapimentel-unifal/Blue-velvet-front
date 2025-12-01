@@ -38,14 +38,10 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Background musical elements */}
+      {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-        {/* Decorative music icons */}
-        <Disc3 className="absolute top-20 right-[15%] w-12 h-12 text-primary/10 animate-spin" style={{ animationDuration: '8s' }} />
-        <Music className="absolute bottom-32 left-[10%] w-8 h-8 text-primary/10" />
-        <Disc3 className="absolute top-1/2 left-[5%] w-6 h-6 text-primary/5 animate-spin" style={{ animationDuration: '12s' }} />
       </div>
 
       <div className="w-full max-w-md px-6 animate-fade-in relative z-10">
