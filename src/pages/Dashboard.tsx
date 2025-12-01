@@ -74,13 +74,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background musical decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <Disc3 className="absolute top-40 right-[5%] w-20 h-20 text-primary/5 animate-spin" style={{ animationDuration: '15s' }} />
-        <Music className="absolute bottom-20 left-[8%] w-10 h-10 text-primary/5" />
-      </div>
-
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -113,7 +107,7 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8 relative z-10">
+      <main className="container mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8 animate-fade-in">
           <h1 className="text-3xl font-bold text-foreground mb-2">

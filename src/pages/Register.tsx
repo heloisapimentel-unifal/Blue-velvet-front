@@ -84,12 +84,10 @@ const Register = () => {
         </Button>
       )}
 
-      {/* Background musical elements */}
+      {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-1/3 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-        <Disc3 className="absolute top-24 right-[12%] w-10 h-10 text-primary/10 animate-spin" style={{ animationDuration: '10s' }} />
-        <Music className="absolute bottom-28 left-[8%] w-8 h-8 text-primary/10" />
       </div>
 
       <div className="w-full max-w-md px-6 animate-fade-in relative z-10">
