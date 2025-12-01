@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import {
   LogOut,
-  Package,
   Plus,
   Search,
   ArrowLeft,
-  List, // 👈 Novo: Importação do ícone List/Categorias
+  Tag,
+  Music,
+  Disc3,
+  Guitar,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, ProductFormData, initialProducts, categories } from '@/types/product';
@@ -193,7 +195,13 @@ const Products = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background musical decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <Disc3 className="absolute top-32 right-[3%] w-16 h-16 text-primary/5 animate-spin" style={{ animationDuration: '12s' }} />
+        <Music className="absolute bottom-24 left-[5%] w-8 h-8 text-primary/5" />
+      </div>
+
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -202,9 +210,9 @@ const Products = () => {
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
             <div className="p-2 rounded-lg bg-primary/10">
-              <Package className="w-6 h-6 text-primary" />
+              <Guitar className="w-6 h-6 text-primary" />
             </div>
-            <span className="text-xl font-semibold text-foreground">Produtos</span>
+            <span className="text-xl font-semibold text-foreground">Catálogo de Produtos</span>
           </div>
           
           <div className="flex items-center gap-4">
@@ -232,12 +240,11 @@ const Products = () => {
             />
           </div>
           
-          {/* 👈 Botões de Ação Agrupados */}
+          {/* Botões de Ação */}
           <div className="flex gap-3">
-            {/* Botão de Categorias */}
             <Button variant="outline" asChild>
                 <Link to="/categories">
-                    <List className="w-4 h-4 mr-2" />
+                    <Tag className="w-4 h-4 mr-2" />
                     Categorias
                 </Link>
             </Button>
