@@ -84,7 +84,6 @@ const Dashboard = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-semibold text-foreground leading-tight">Blue Velvet</span>
-              <span className="text-xs text-primary/70 tracking-widest uppercase">Management</span>
             </div>
           </div>
           

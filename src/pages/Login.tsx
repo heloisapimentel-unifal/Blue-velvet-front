@@ -51,7 +51,6 @@ const Login = () => {
             <Music className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-1">Blue Velvet</h1>
-          <p className="text-sm font-medium text-primary/80 tracking-widest uppercase mb-2">Management</p>
           <p className="text-muted-foreground">Faça login para acessar o painel</p>
         </div>
 
