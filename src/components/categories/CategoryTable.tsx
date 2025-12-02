@@ -15,6 +15,7 @@ interface CategoryTableProps {
   categories: Category[];
   onEdit: (category: Category) => void;
   onDelete: (category: Category) => void;
+  searchTerm?: string;
 }
 
 // Interface para as categorias hierárquicas a serem exibidas na tabela
@@ -22,7 +23,15 @@ interface HierarchicalCategory extends Category {
     level: number;
 }
 
-const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTableProps) => {
+const CategoryTable = ({ categories, onEdit, onDelete, searchTerm = '' }: CategoryTableProps) => {
+  
+  // Verifica se uma categoria corresponde diretamente à pesquisa
+  const isDirectMatch = (category: Category): boolean => {
+    if (!searchTerm.trim()) return false;
+    const lowerSearch = searchTerm.toLowerCase();
+    return category.name.toLowerCase().includes(lowerSearch) || 
+           category.imageFilename.toLowerCase().includes(lowerSearch);
+  };
 
   // Função para construir a lista hierárquica plana para exibição
   const getHierarchicalList = (categories: Category[]): HierarchicalCategory[] => {
@@ -80,7 +89,14 @@ const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTableProps) => 
             </TableRow>
           ) : (
             hierarchicalCategories.map((category) => (
-              <TableRow key={category.id} className="group">
+              <TableRow 
+                key={category.id} 
+                className={`group transition-colors ${
+                  isDirectMatch(category) 
+                    ? 'bg-primary/5 border-l-4 border-l-primary' 
+                    : ''
+                }`}
+              >
                 
                 {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia) */}
                 <TableCell className="font-medium text-foreground py-2">
