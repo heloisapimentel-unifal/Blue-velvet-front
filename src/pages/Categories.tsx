@@ -60,53 +60,59 @@ const Categories = () => {
     return null;
   }
 
-  // Função auxiliar para verificar se uma categoria é ancestral de outra
-  const isAncestorOf = (ancestorId: string, categoryId: string): boolean => {
-    const category = categoriesList.find(c => c.id === categoryId);
-    if (!category || !category.parentId) return false;
-    if (category.parentId === ancestorId) return true;
-    return isAncestorOf(ancestorId, category.parentId);
+  // Função para normalizar texto (remover acentos)
+  const normalizeText = (text: string): string => {
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   };
 
-  // Lógica de filtragem que mantém a hierarquia correta
-  const filteredCategories = (() => {
-    if (!searchTerm.trim()) return categoriesList;
+  // Lógica de filtragem e identificação de correspondências
+  const { filteredCategories, directMatchIds } = (() => {
+    if (!searchTerm.trim()) return { filteredCategories: categoriesList, directMatchIds: new Set<string>() };
     
-    const lowerSearch = searchTerm.toLowerCase();
+    const normalizedSearch = normalizeText(searchTerm);
     
-    // Primeiro, encontra todas as categorias que correspondem diretamente à busca
+    // Encontra categorias que correspondem diretamente à busca
     const directMatches = new Set<string>();
     categoriesList.forEach(category => {
       if (
-        category.name.toLowerCase().includes(lowerSearch) ||
-        category.imageFilename.toLowerCase().includes(lowerSearch)
+        normalizeText(category.name).includes(normalizedSearch) ||
+        normalizeText(category.imageFilename).includes(normalizedSearch)
       ) {
         directMatches.add(category.id);
       }
     });
 
-    // Adiciona todos os descendentes das categorias que correspondem
-    const matchesWithDescendants = new Set(directMatches);
-    categoriesList.forEach(category => {
-      for (const matchId of directMatches) {
-        if (isAncestorOf(matchId, category.id)) {
-          matchesWithDescendants.add(category.id);
+    // Coleta todos os IDs relevantes (correspondências + descendentes + ancestrais)
+    const relevantIds = new Set(directMatches);
+    
+    // Adiciona descendentes
+    const addDescendants = (parentId: string) => {
+      categoriesList.forEach(cat => {
+        if (cat.parentId === parentId && !relevantIds.has(cat.id)) {
+          relevantIds.add(cat.id);
+          addDescendants(cat.id);
         }
-      }
-    });
-
-    // Adiciona todos os ancestrais das categorias que correspondem (para manter contexto)
-    const finalMatches = new Set(matchesWithDescendants);
+      });
+    };
+    
+    // Adiciona ancestrais
     const addAncestors = (categoryId: string) => {
       const category = categoriesList.find(c => c.id === categoryId);
-      if (category?.parentId) {
-        finalMatches.add(category.parentId);
+      if (category?.parentId && !relevantIds.has(category.parentId)) {
+        relevantIds.add(category.parentId);
         addAncestors(category.parentId);
       }
     };
-    matchesWithDescendants.forEach(id => addAncestors(id));
+    
+    directMatches.forEach(id => {
+      addDescendants(id);
+      addAncestors(id);
+    });
 
-    return categoriesList.filter(c => finalMatches.has(c.id));
+    return {
+      filteredCategories: categoriesList.filter(c => relevantIds.has(c.id)),
+      directMatchIds: directMatches
+    };
   })();
 
   const openCreateDialog = () => {
@@ -272,7 +278,7 @@ const Categories = () => {
             categories={filteredCategories}
             onEdit={openEditDialog}
             onDelete={openDeleteDialog}
-            searchTerm={searchTerm}
+            highlightIds={directMatchIds}
           />
         </div>
 
