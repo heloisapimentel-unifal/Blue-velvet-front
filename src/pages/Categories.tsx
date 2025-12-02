@@ -71,7 +71,7 @@ const Categories = () => {
     
     const normalizedSearch = normalizeText(searchTerm);
     
-    // Encontra categorias que correspondem diretamente à busca
+    // Encontra categorias que correspondem diretamente à busca (APENAS ESTAS SERÃO DESTACADAS)
     const directMatches = new Set<string>();
     categoriesList.forEach(category => {
       if (
@@ -82,10 +82,10 @@ const Categories = () => {
       }
     });
 
-    // Coleta todos os IDs relevantes (correspondências + descendentes + ancestrais)
+    // Para filtragem: mostra as correspondências + seus pais e filhos (para contexto)
     const relevantIds = new Set(directMatches);
     
-    // Adiciona descendentes
+    // Adiciona descendentes das categorias que correspondem
     const addDescendants = (parentId: string) => {
       categoriesList.forEach(cat => {
         if (cat.parentId === parentId && !relevantIds.has(cat.id)) {
@@ -95,7 +95,7 @@ const Categories = () => {
       });
     };
     
-    // Adiciona ancestrais
+    // Adiciona ancestrais das categorias que correspondem
     const addAncestors = (categoryId: string) => {
       const category = categoriesList.find(c => c.id === categoryId);
       if (category?.parentId && !relevantIds.has(category.parentId)) {
@@ -109,13 +109,9 @@ const Categories = () => {
       addAncestors(id);
     });
 
-    console.log('Search term:', searchTerm);
-    console.log('Direct matches:', Array.from(directMatches));
-    console.log('Categories:', categoriesList.map(c => ({ id: c.id, name: c.name })));
-
     return {
       filteredCategories: categoriesList.filter(c => relevantIds.has(c.id)),
-      directMatchIds: directMatches
+      directMatchIds: directMatches // APENAS as que correspondem diretamente serão destacadas
     };
   })();
 
