@@ -272,6 +272,7 @@ const Categories = () => {
             categories={filteredCategories}
             onEdit={openEditDialog}
             onDelete={openDeleteDialog}
+            searchTerm={searchTerm}
           />
         </div>
 
