@@ -109,6 +109,10 @@ const Categories = () => {
       addAncestors(id);
     });
 
+    console.log('Search term:', searchTerm);
+    console.log('Direct matches:', Array.from(directMatches));
+    console.log('Categories:', categoriesList.map(c => ({ id: c.id, name: c.name })));
+
     return {
       filteredCategories: categoriesList.filter(c => relevantIds.has(c.id)),
       directMatchIds: directMatches
