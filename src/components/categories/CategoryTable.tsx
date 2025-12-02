@@ -24,6 +24,8 @@ interface HierarchicalCategory extends Category {
 }
 
 const CategoryTable = ({ categories, onEdit, onDelete, highlightIds }: CategoryTableProps) => {
+  
+  console.log('CategoryTable highlightIds:', highlightIds ? Array.from(highlightIds) : 'undefined');
 
   // Função para construir a lista hierárquica plana para exibição
   const getHierarchicalList = (categories: Category[]): HierarchicalCategory[] => {
@@ -80,15 +82,19 @@ const CategoryTable = ({ categories, onEdit, onDelete, highlightIds }: CategoryT
               </TableCell>
             </TableRow>
           ) : (
-            hierarchicalCategories.map((category) => (
-              <TableRow 
-                key={category.id} 
-                className={`group transition-colors ${
-                  highlightIds?.has(category.id)
-                    ? 'bg-primary/5 border-l-4 border-l-primary' 
-                    : ''
-                }`}
-              >
+            hierarchicalCategories.map((category) => {
+              const isHighlighted = highlightIds?.has(category.id) || false;
+              console.log(`Category ${category.name} (${category.id}):`, isHighlighted);
+              
+              return (
+                <TableRow 
+                  key={category.id} 
+                  className={`group transition-colors ${
+                    isHighlighted
+                      ? 'bg-primary/10 border-l-4 border-l-primary font-semibold' 
+                      : ''
+                  }`}
+                >
                 
                 {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia) */}
                 <TableCell className="font-medium text-foreground py-2">
@@ -152,8 +158,10 @@ const CategoryTable = ({ categories, onEdit, onDelete, highlightIds }: CategoryT
                     </Button>
                   </div>
                 </TableCell>
+                
               </TableRow>
-            ))
+              );
+            })
           )}
         </TableBody>
       </Table>
