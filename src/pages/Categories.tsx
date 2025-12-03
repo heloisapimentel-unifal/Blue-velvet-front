@@ -16,8 +16,6 @@ import {
   ArrowLeft,
   Tag, 
   Guitar, 
-  Music,
-  Disc3,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -44,6 +42,7 @@ const Categories = () => {
 
   const [categoriesList, setCategoriesList] = useState<Category[]>(initialCategories);
   const [searchTerm, setSearchTerm] = useState('');
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -59,61 +58,6 @@ const Categories = () => {
     navigate('/login');
     return null;
   }
-
-  // Função para normalizar texto (remover acentos)
-  const normalizeText = (text: string): string => {
-    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  };
-
-  // Lógica de filtragem e identificação de correspondências
-  const { filteredCategories, directMatchIds } = (() => {
-    if (!searchTerm.trim()) return { filteredCategories: categoriesList, directMatchIds: new Set<string>() };
-    
-    const normalizedSearch = normalizeText(searchTerm);
-    
-    // Encontra categorias que correspondem diretamente à busca (APENAS ESTAS SERÃO DESTACADAS)
-    const directMatches = new Set<string>();
-    categoriesList.forEach(category => {
-      if (
-        normalizeText(category.name).includes(normalizedSearch) ||
-        normalizeText(category.imageFilename).includes(normalizedSearch)
-      ) {
-        directMatches.add(category.id);
-      }
-    });
-
-    // Para filtragem: mostra as correspondências + seus pais e filhos (para contexto)
-    const relevantIds = new Set(directMatches);
-    
-    // Adiciona descendentes das categorias que correspondem
-    const addDescendants = (parentId: string) => {
-      categoriesList.forEach(cat => {
-        if (cat.parentId === parentId && !relevantIds.has(cat.id)) {
-          relevantIds.add(cat.id);
-          addDescendants(cat.id);
-        }
-      });
-    };
-    
-    // Adiciona ancestrais das categorias que correspondem
-    const addAncestors = (categoryId: string) => {
-      const category = categoriesList.find(c => c.id === categoryId);
-      if (category?.parentId && !relevantIds.has(category.parentId)) {
-        relevantIds.add(category.parentId);
-        addAncestors(category.parentId);
-      }
-    };
-    
-    directMatches.forEach(id => {
-      addDescendants(id);
-      addAncestors(id);
-    });
-
-    return {
-      filteredCategories: categoriesList.filter(c => relevantIds.has(c.id)),
-      directMatchIds: directMatches // APENAS as que correspondem diretamente serão destacadas
-    };
-  })();
 
   const openCreateDialog = () => {
     setEditingCategory(null);
@@ -152,7 +96,6 @@ const Categories = () => {
     const now = new Date().toISOString();
     const parentCategory = categoriesList.find(c => c.id === formData.parentId);
     const parentName = parentCategory ? parentCategory.name : undefined;
-
 
     if (editingCategory) {
       setCategoriesList(categoriesList.map((c) =>
@@ -244,8 +187,10 @@ const Categories = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Actions Bar */}
+        {/* Actions Bar - Layout com Input e Botões */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6 animate-fade-in">
+          
+          {/* Input de Busca */}
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -256,15 +201,14 @@ const Categories = () => {
             />
           </div>
           
-          {/* Botões de Ação Agrupados */}
-          <div className="flex gap-3">
+          {/* Botões de Ação */}
+          <div className="flex gap-3 w-full sm:w-auto justify-end">
             <Button variant="outline" asChild>
                 <Link to="/products">
                     <Guitar className="w-4 h-4 mr-2" />
                     Produtos
                 </Link>
             </Button>
-            {/* Botão de Nova Categoria */}
             <Button onClick={openCreateDialog}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Categoria
@@ -275,18 +219,18 @@ const Categories = () => {
         {/* Categories Table */}
         <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <CategoryTable
-            categories={filteredCategories}
-            allCategories={categoriesList}
+            categories={categoriesList}    // Passa a lista COMPLETA
+            allCategories={categoriesList} // Passa para o modal de detalhes
+            searchTerm={searchTerm}        // Passa o termo para a tabela filtrar
             onEdit={openEditDialog}
             onDelete={openDeleteDialog}
-            highlightIds={directMatchIds}
           />
         </div>
 
         {/* Stats */}
         <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <span>{filteredCategories.length} categoria(s)</span>
-          <span>Ativas: {filteredCategories.filter(c => c.isEnabled).length}</span>
+          <span>{categoriesList.length} categoria(s)</span>
+          <span>Ativas: {categoriesList.filter(c => c.isEnabled).length}</span>
         </div>
       </main>
 

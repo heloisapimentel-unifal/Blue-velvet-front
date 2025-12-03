@@ -14,16 +14,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Tag } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Tag, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Category, getCategoryImageUrl } from '@/types/category';
 import CategoryDetailModal from './CategoryDetailModal';
 
 interface CategoryTableProps {
   categories: Category[];
-  allCategories: Category[];
+  allCategories: Category[]; // Mantido para o Modal
   onEdit: (category: Category) => void;
   onDelete: (category: Category) => void;
   highlightIds?: Set<string>;
+  searchTerm: string; // 👈 Nova prop recebida do Pai
 }
 
 // Interface para as categorias hierárquicas a serem exibidas na tabela
@@ -31,10 +32,46 @@ interface HierarchicalCategory extends Category {
     level: number;
 }
 
-const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightIds }: CategoryTableProps) => {
-  const [viewCategory, setViewCategory] = useState<Category | null>(null);
+// Tipo para os 3 estados de ordenação
+type SortDirection = 'default' | 'asc' | 'desc';
 
-  // Função para construir a lista hierárquica plana para exibição
+const CategoryTable = ({ 
+  categories, 
+  allCategories, 
+  onEdit, 
+  onDelete, 
+  highlightIds, 
+  searchTerm // Recebendo o termo de busca
+}: CategoryTableProps) => {
+  
+  const [viewCategory, setViewCategory] = useState<Category | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('default');
+
+  // --- LÓGICA DE ORDENAÇÃO ---
+
+  // Ciclo: Default -> Asc -> Desc -> Default
+  const toggleSort = () => {
+    setSortDirection(prev => {
+      if (prev === 'default') return 'asc';
+      if (prev === 'asc') return 'desc';
+      return 'default';
+    });
+  };
+
+  const compareCategories = (a: Category, b: Category) => {
+    const comparison = a.name.localeCompare(b.name);
+    return sortDirection === 'asc' ? comparison : -comparison;
+  };
+
+  const getSortIcon = () => {
+    if (sortDirection === 'asc') return <ArrowUp className="ml-2 h-4 w-4" />;
+    if (sortDirection === 'desc') return <ArrowDown className="ml-2 h-4 w-4" />;
+    return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+  };
+
+  // --- LÓGICA DE HIERARQUIA ---
+
+  // Constrói a árvore (apenas para o estado 'default')
   const getHierarchicalList = (categories: Category[]): HierarchicalCategory[] => {
     const hierarchicalList: HierarchicalCategory[] = [];
     const categoryMap = new Map<string | null, Category[]>();
@@ -51,7 +88,7 @@ const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightI
     // 2. Função de travessia recursiva
     const traverse = (parentId: string | null, level: number) => {
       const children = categoryMap.get(parentId) || [];
-      // Ordena alfabeticamente
+      // Ordena alfabeticamente os irmãos na árvore
       children.sort((a, b) => a.name.localeCompare(b.name)); 
       
       for (const cat of children) {
@@ -60,36 +97,79 @@ const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightI
       }
     };
 
-    // Inicia a travessia com as categorias principais (Top-level: parentId = null)
+    // Inicia a travessia
     traverse(null, 0);
     return hierarchicalList;
   };
   
-  // Lista de categorias ordenada e indentada para a tabela
-  const hierarchicalCategories = useMemo(() => 
-    getHierarchicalList(categories)
-  , [categories]);
+  // --- LÓGICA PRINCIPAL DE EXIBIÇÃO ---
+  const displayedCategories = useMemo(() => {
+    const isSearching = searchTerm.trim().length > 0;
+    const isSorting = sortDirection !== 'default';
+
+    // REGRA: Se NÃO tem busca E NÃO tem ordenação forçada -> Mostra Hierarquia (Árvore)
+    if (!isSearching && !isSorting) {
+      return getHierarchicalList(categories);
+    }
+
+    // CASO CONTRÁRIO -> Mostra Lista Plana (Flat List)
+    
+    // 1. Começa com todas ou filtra se tiver busca
+    let flatList = categories;
+    
+    if (isSearching) {
+      flatList = flatList.filter((cat) => 
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // 2. Remove indentação (level 0)
+    let processedList = flatList.map((cat) => ({ ...cat, level: 0 }));
+
+    // 3. Aplica a Ordenação
+    if (isSorting) {
+      processedList.sort(compareCategories);
+    } else {
+      // Se estiver buscando (mas sem sort), ordena A-Z por padrão
+      processedList.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
+    return processedList;
+
+  }, [categories, searchTerm, sortDirection]);
 
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead>Categoria</TableHead> {/* Célula combinada: Imagem, Hierarquia e Nome */}
+            {/* Cabeçalho Clicável para Ordenação */}
+            <TableHead className="w-[400px]">
+              <Button 
+                variant="ghost" 
+                onClick={toggleSort}
+                className="-ml-3 h-8 hover:bg-muted/50"
+              >
+                <span>Categoria</span>
+                {getSortIcon()}
+              </Button>
+            </TableHead>
+            
             <TableHead className="text-center w-[120px]">Status</TableHead>
             <TableHead className="text-right w-[100px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {hierarchicalCategories.length === 0 ? (
+          {displayedCategories.length === 0 ? (
             <TableRow>
-              {/* Ajustado colSpan para 3 colunas */}
               <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
-                Nenhuma categoria encontrada.
+                {searchTerm 
+                  ? `Nenhum resultado para "${searchTerm}"` 
+                  : 'Nenhuma categoria encontrada.'}
               </TableCell>
             </TableRow>
           ) : (
-            hierarchicalCategories.map((category) => (
+            displayedCategories.map((category) => (
               <TableRow 
                 key={category.id} 
                 className={`group transition-colors ${
@@ -99,11 +179,11 @@ const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightI
                 }`}
               >
                 
-                {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia) */}
+                {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia/Flat) */}
                 <TableCell className="font-medium text-foreground py-2">
                   <div 
                     className="flex items-center gap-3" 
-                    // Aplica a indentação na div externa para mover o conteúdo todo
+                    // Se for Flat (level 0), padding é 0. Se for Árvore, tem padding.
                     style={{ paddingLeft: `${category.level * 20}px` }} 
                   >
                     {/* Imagem */}
@@ -111,7 +191,6 @@ const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightI
                         src={getCategoryImageUrl(category.imageFilename)}
                         alt={`Imagem de ${category.name}`}
                         className="w-10 h-10 object-cover rounded-md border border-border flex-shrink-0"
-                        // Adiciona fallback para caso as imagens 'jorge' não carreguem
                         onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.src = '/images/placeholder.png'; 
@@ -122,6 +201,7 @@ const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightI
                     {/* Texto com Ícone e Nome */}
                     <div className="flex items-center">
                         <Tag className={`w-4 h-4 mr-2 ${category.level === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
+                        {/* Traço hierárquico só aparece se level > 0 */}
                         {category.level > 0 && <span className="text-muted-foreground mr-1">—</span>}
                         {category.name}
                     </div>
