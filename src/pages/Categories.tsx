@@ -276,6 +276,7 @@ const Categories = () => {
         <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <CategoryTable
             categories={filteredCategories}
+            allCategories={categoriesList}
             onEdit={openEditDialog}
             onDelete={openDeleteDialog}
             highlightIds={directMatchIds}

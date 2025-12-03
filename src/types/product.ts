@@ -27,6 +27,7 @@ export interface Product {
   dimensions: ProductDimension;
   cost: number;
   details: ProductDetail[];
+  imageUrl?: string;
 }
 
 export interface ProductFormData {

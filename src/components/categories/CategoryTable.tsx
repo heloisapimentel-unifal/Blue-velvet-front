@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -7,12 +8,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pencil, Trash2, Check, X, Tag } from 'lucide-react';
-import { Category, getCategoryImageUrl } from '@/types/category'; // 👈 Importando getCategoryImageUrl
-import { useMemo } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Tag } from 'lucide-react';
+import { Category, getCategoryImageUrl } from '@/types/category';
+import CategoryDetailModal from './CategoryDetailModal';
 
 interface CategoryTableProps {
   categories: Category[];
+  allCategories: Category[];
   onEdit: (category: Category) => void;
   onDelete: (category: Category) => void;
   highlightIds?: Set<string>;
@@ -23,7 +31,8 @@ interface HierarchicalCategory extends Category {
     level: number;
 }
 
-const CategoryTable = ({ categories, onEdit, onDelete, highlightIds }: CategoryTableProps) => {
+const CategoryTable = ({ categories, allCategories, onEdit, onDelete, highlightIds }: CategoryTableProps) => {
+  const [viewCategory, setViewCategory] = useState<Category | null>(null);
 
   // Função para construir a lista hierárquica plana para exibição
   const getHierarchicalList = (categories: Category[]): HierarchicalCategory[] => {
@@ -133,30 +142,43 @@ const CategoryTable = ({ categories, onEdit, onDelete, highlightIds }: CategoryT
                 </TableCell>
                 
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(category)}
-                      className="h-8 w-8"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDelete(category)}
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-popover">
+                      <DropdownMenuItem onClick={() => setViewCategory(category)}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver Detalhes
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(category)}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onDelete(category)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+
+      <CategoryDetailModal
+        category={viewCategory}
+        allCategories={allCategories}
+        open={!!viewCategory}
+        onClose={() => setViewCategory(null)}
+      />
     </div>
   );
 };
