@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -7,8 +8,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pencil, Trash2, Check, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Package } from 'lucide-react';
 import { Product, categories } from '@/types/product';
+import ProductDetailModal from './ProductDetailModal';
 
 interface ProductTableProps {
   products: Product[];
@@ -17,6 +25,7 @@ interface ProductTableProps {
 }
 
 const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
+  const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -42,7 +51,7 @@ const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
             <TableHead className="hidden md:table-cell">Categoria</TableHead>
             <TableHead className="text-right">Preço</TableHead>
             <TableHead className="text-center hidden sm:table-cell">Status</TableHead>
-            <TableHead className="text-right w-[100px]">Ações</TableHead>
+            <TableHead className="text-right w-[60px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,11 +65,24 @@ const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
             products.map((product) => (
               <TableRow key={product.id} className="group">
                 <TableCell>
-                  <div>
-                    <p className="font-medium text-foreground">{product.name}</p>
-                    <p className="text-sm text-muted-foreground hidden sm:block">
-                      {product.shortDescription}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden border border-border">
+                      {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Package className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{product.name}</p>
+                      <p className="text-sm text-muted-foreground hidden sm:block">
+                        {product.shortDescription}
+                      </p>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground">
@@ -107,30 +129,42 @@ const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(product)}
-                      className="h-8 w-8"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDelete(product)}
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-popover">
+                      <DropdownMenuItem onClick={() => setViewProduct(product)}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver Detalhes
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(product)}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onDelete(product)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+
+      <ProductDetailModal
+        product={viewProduct}
+        open={!!viewProduct}
+        onClose={() => setViewProduct(null)}
+      />
     </div>
   );
 };
