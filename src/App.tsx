@@ -10,6 +10,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Categories from "./pages/Categories"; 
+import Storefront from "./pages/Storefront";
+import StorefrontCategory from "./pages/StorefrontCategory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +29,9 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/products" element={<Products />} />
-            <Route path="/categories" element={<Categories />} /> 
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/store" element={<Storefront />} />
+            <Route path="/store/category/:categoryId" element={<StorefrontCategory />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

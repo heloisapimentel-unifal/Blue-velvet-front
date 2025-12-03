@@ -14,7 +14,9 @@ import {
   UserPlus,
   Disc3,
   Guitar,
-  Shield
+  Shield,
+  Store,
+  ExternalLink
 } from 'lucide-react';
 
 const getRoleIcon = (role: string) => {
@@ -71,6 +73,7 @@ const Dashboard = () => {
   const menuItems = [
     { icon: Guitar, label: 'Produtos', description: 'Gerenciar catálogo', href: '/products' },
     { icon: Tag, label: 'Categorias', description: 'Gerenciar categorias', href: '/categories' },
+    { icon: Store, label: 'Vitrine', description: 'Ver loja do cliente', href: '/store', external: true },
   ];
 
   return (
@@ -144,6 +147,7 @@ const Dashboard = () => {
             <Link
               key={item.label}
               to={item.href}
+              target={item.external ? '_blank' : undefined}
               className="glass-card p-6 rounded-xl hover:border-primary/30 transition-all duration-200 group animate-fade-in hover-lift"
               style={{ animationDelay: `${(index + 2) * 0.1}s` }}
             >
@@ -151,8 +155,13 @@ const Dashboard = () => {
                 <div className="p-3 rounded-lg bg-secondary group-hover:bg-primary/10 transition-colors">
                   <item.icon className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-1">{item.label}</h3>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground mb-1">{item.label}</h3>
+                    {item.external && (
+                      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">{item.description}</p>
                 </div>
               </div>
