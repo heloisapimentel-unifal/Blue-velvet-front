@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Tag, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Tag, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Category, getCategoryImageUrl } from '@/types/category';
 import CategoryDetailModal from './CategoryDetailModal';
 
@@ -64,9 +64,9 @@ const CategoryTable = ({
   };
 
   const getSortIcon = () => {
-    if (sortDirection === 'asc') return <ArrowUp className="ml-2 h-4 w-4" />;
-    if (sortDirection === 'desc') return <ArrowDown className="ml-2 h-4 w-4" />;
-    return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    if (sortDirection === 'asc') return <ChevronUp className="ml-2 h-4 w-4" />;
+    if (sortDirection === 'desc') return <ChevronDown className="ml-2 h-4 w-4" />;
+    return <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />;
   };
 
   // --- LÓGICA DE HIERARQUIA ---
