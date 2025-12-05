@@ -299,7 +299,7 @@ const Storefront = () => {
       {/* Footer */}
       <footer className="border-t border-border bg-card/50 mt-auto">
         <div className="container mx-auto px-6 py-6 text-center text-sm text-muted-foreground">
-          © 2025 Blue Velvet Music Store. Todos os direitos reservados.
+          Projeto Blue Velvet Music Store. Todos os direitos reservados.
         </div>
       </footer>
     </div>
