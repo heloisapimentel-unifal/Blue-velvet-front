@@ -26,7 +26,7 @@ import {
 import StorefrontProductCard from '@/components/storefront/StorefrontProductCard';
 import StorefrontProductModal from '@/components/storefront/StorefrontProductModal';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 10;
 
 const StorefrontCategory = () => {
   const { categoryId } = useParams<{ categoryId: string }>();

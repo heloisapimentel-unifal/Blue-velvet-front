@@ -14,10 +14,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Package } from 'lucide-react';
 import { Product} from '@/types/product';
 import ProductDetailModal from './ProductDetailModal';
-import { Category } from '@/types/category'; // 1. Importar o tipo Category
+import { Category } from '@/types/category';
+
+const ITEMS_PER_PAGE = 10;
 
 interface ProductTableProps {
   products: Product[];
@@ -67,7 +77,20 @@ const findCategoryInTree = (categories: Category[], id: string | number): Catego
 
 const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTableProps) => {
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const categoryMap = useMemo(() => createCategoryMap(categories), [categories]);
+
+  // Paginação
+  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+  const paginatedProducts = products.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset página quando produtos mudam (ex: busca)
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [products.length]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -101,14 +124,14 @@ const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTablePr
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.length === 0 ? (
+          {paginatedProducts.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                 Nenhum produto encontrado.
               </TableCell>
             </TableRow>
           ) : (
-            products.map((product) => (
+            paginatedProducts.map((product) => (
               <TableRow key={product.id} className="group">
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -205,6 +228,39 @@ const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTablePr
           )}
         </TableBody>
       </Table>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="border-t border-border p-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(page)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <ProductDetailModal
         product={viewProduct}
