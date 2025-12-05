@@ -96,7 +96,10 @@ const Categories = () => {
     navigate('/login');
   };
 
-  // Função para exportar CSV
+  // Função para exportar CSV conforme especificação:
+  // - Apenas dois campos: id e name
+  // - Nome do arquivo: categories_YYYY-MM-DD_HH-mm-ss.csv
+  // - Hierarquia: substituir "--" por "  " (2 espaços)
   const handleExportCSV = () => {
     if (!categoriesList || categoriesList.length === 0) {
       toast({
@@ -107,23 +110,37 @@ const Categories = () => {
       return;
     }
 
-    // Encontra o nome da categoria pai
-    const getParentName = (parentId: string | null) => {
-      if (!parentId) return '';
-      const parent = categoriesList.find(c => String(c.id) === String(parentId));
-      return parent?.name || '';
+    // Função recursiva para processar hierarquia
+    const processHierarchy = (categories: Category[], level = 0): Array<{ id: string | number; name: string }> => {
+      const result: Array<{ id: string | number; name: string }> = [];
+      const roots = categories.filter(c => !c.parentId);
+      
+      const processNode = (cat: Category, depth: number) => {
+        // Adiciona espaços para indicar hierarquia (2 espaços por nível)
+        const indent = '  '.repeat(depth);
+        result.push({ id: cat.id, name: `${indent}${cat.name}` });
+        
+        // Processa filhos
+        const children = categories.filter(c => String(c.parentId) === String(cat.id));
+        children.sort((a, b) => a.name.localeCompare(b.name));
+        children.forEach(child => processNode(child, depth + 1));
+      };
+      
+      roots.sort((a, b) => a.name.localeCompare(b.name));
+      roots.forEach(root => processNode(root, 0));
+      
+      return result;
     };
 
-    // Cabeçalho do CSV
-    const headers = ['ID', 'Nome', 'Categoria Pai', 'Status', 'Imagem'];
+    const hierarchicalData = processHierarchy(categoriesList);
+
+    // Cabeçalho do CSV (apenas id e name)
+    const headers = ['id', 'name'];
     
     // Linhas de dados
-    const rows = categoriesList.map(cat => [
-      cat.id,
-      `"${cat.name.replace(/"/g, '""')}"`, // Escapa aspas duplas
-      `"${getParentName(cat.parentId)}"`,
-      cat.enabled ? 'Ativa' : 'Inativa',
-      cat.image || ''
+    const rows = hierarchicalData.map(item => [
+      item.id,
+      `"${item.name.replace(/"/g, '""')}"` // Escapa aspas duplas
     ]);
 
     // Monta o conteúdo CSV
@@ -132,12 +149,18 @@ const Categories = () => {
       ...rows.map(row => row.join(','))
     ].join('\n');
 
+    // Gera nome do arquivo com padrão: categories_YYYY-MM-DD_HH-mm-ss.csv
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+    const fileName = `categories_${dateStr}_${timeStr}.csv`;
+
     // Cria e baixa o arquivo
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `categorias_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -145,7 +168,7 @@ const Categories = () => {
 
     toast({
       title: 'CSV exportado',
-      description: `${categoriesList.length} categorias exportadas com sucesso.`,
+      description: `${hierarchicalData.length} categorias exportadas com sucesso.`,
     });
   };
 

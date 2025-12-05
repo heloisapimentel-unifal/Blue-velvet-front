@@ -14,9 +14,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Tag, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Category, getCategoryImageUrl } from '@/types/category';
 import CategoryDetailModal from './CategoryDetailModal';
+
+const ITEMS_PER_PAGE = 10;
 
 interface CategoryTableProps {
   categories: Category[];
@@ -34,6 +44,7 @@ interface HierarchicalCategory extends Category {
 
 // Tipo para os 3 estados de ordenação
 type SortDirection = 'default' | 'asc' | 'desc';
+type SortField = 'name' | 'id';
 
 const CategoryTable = ({
   categories,
@@ -45,25 +56,38 @@ const CategoryTable = ({
 }: CategoryTableProps) => {
 
   const [viewCategory, setViewCategory] = useState<Category | null>(null);
+  const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('default');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // --- LÓGICA DE ORDENAÇÃO ---
 
   // Ciclo: Default -> Asc -> Desc -> Default
-  const toggleSort = () => {
-    setSortDirection(prev => {
-      if (prev === 'default') return 'asc';
-      if (prev === 'asc') return 'desc';
-      return 'default';
-    });
+  const toggleSort = (field: SortField) => {
+    if (sortField !== field) {
+      setSortField(field);
+      setSortDirection('asc');
+    } else {
+      setSortDirection(prev => {
+        if (prev === 'default') return 'asc';
+        if (prev === 'asc') return 'desc';
+        return 'default';
+      });
+    }
+    setCurrentPage(1);
   };
 
   const compareCategories = (a: Category, b: Category) => {
+    if (sortField === 'id') {
+      const comparison = Number(a.id) - Number(b.id);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    }
     const comparison = a.name.localeCompare(b.name);
     return sortDirection === 'asc' ? comparison : -comparison;
   };
 
-  const getSortIcon = () => {
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />;
     if (sortDirection === 'asc') return <ChevronUp className="ml-2 h-4 w-4" />;
     if (sortDirection === 'desc') return <ChevronDown className="ml-2 h-4 w-4" />;
     return <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />;
@@ -103,17 +127,13 @@ const CategoryTable = ({
     const isSorting = sortDirection !== 'default';
 
     // FIX CRÍTICO: Primeiro, identificamos a árvore correta.
-    // Como 'categories' vem do backend com TODAS as categorias (lista plana),
-    // precisamos filtrar apenas as raízes para iniciar o achatamento.
-    // Caso contrário, as subcategorias são processadas duas vezes (como filho e como item solto).
     const rootCategories = categories.filter(cat => !cat.parentId);
     
-    // Gera a lista linear correta baseada APENAS nas raízes (a recursão pega o resto)
+    // Gera a lista linear correta baseada APENAS nas raízes
     const hierarchicalList = flattenHierarchicalData(rootCategories);
 
     // 1. Se tiver busca
     if (isSearching) {
-       // Buscamos na lista hierárquica já processada e limpa (sem duplicatas)
        return hierarchicalList.filter(cat => 
          cat.name.toLowerCase().includes(searchTerm.toLowerCase())
        ).map(c => ({...c, level: 0})); 
@@ -127,22 +147,45 @@ const CategoryTable = ({
     // 3. PADRÃO: Mostra a árvore processada
     return hierarchicalList;
 
-  }, [categories, searchTerm, sortDirection]);
+  }, [categories, searchTerm, sortDirection, sortField]);
+
+  // Paginação
+  const totalPages = Math.ceil(displayedCategories.length / ITEMS_PER_PAGE);
+  const paginatedCategories = displayedCategories.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset página ao mudar busca
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            {/* Cabeçalho Clicável para Ordenação */}
+            {/* Coluna ID com Sort */}
+            <TableHead className="w-[80px]">
+              <Button
+                variant="ghost"
+                onClick={() => toggleSort('id')}
+                className="-ml-3 h-8 hover:bg-muted/50"
+              >
+                <span>ID</span>
+                {getSortIcon('id')}
+              </Button>
+            </TableHead>
+            {/* Cabeçalho Clicável para Ordenação por Nome */}
             <TableHead className="w-[400px]">
               <Button
                 variant="ghost"
-                onClick={toggleSort}
+                onClick={() => toggleSort('name')}
                 className="-ml-3 h-8 hover:bg-muted/50"
               >
                 <span>Categoria</span>
-                {getSortIcon()}
+                {getSortIcon('name')}
               </Button>
             </TableHead>
 
@@ -151,16 +194,16 @@ const CategoryTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {displayedCategories.length === 0 ? (
+          {paginatedCategories.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                 {searchTerm
                   ? `Nenhum resultado para "${searchTerm}"`
                   : 'Nenhuma categoria encontrada.'}
               </TableCell>
             </TableRow>
           ) : (
-            displayedCategories.map((category) => (
+            paginatedCategories.map((category) => (
               <TableRow
                 key={category.id}
                 className={`group transition-colors ${highlightIds?.has(category.id.toString())
@@ -168,12 +211,15 @@ const CategoryTable = ({
                     : ''
                   }`}
               >
+                {/* CÉLULA ID */}
+                <TableCell className="text-muted-foreground font-mono text-sm">
+                  {category.id}
+                </TableCell>
 
                 {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia/Flat) */}
                 <TableCell className="font-medium text-foreground py-2">
                   <div
                     className="flex items-center gap-3"
-                    // Se for Flat (level 0), padding é 0. Se for Árvore, tem padding.
                     style={{ paddingLeft: `${category.level * 20}px` }}
                   >
                     {/* Imagem */}
@@ -191,7 +237,6 @@ const CategoryTable = ({
                     {/* Texto com Ícone e Nome */}
                     <div className="flex items-center">
                       <Tag className={`w-4 h-4 mr-2 ${category.level === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
-                      {/* Traço hierárquico só aparece se level > 0 */}
                       {category.level > 0 && <span className="text-muted-foreground mr-1">—</span>}
                       {category.name}
                     </div>
@@ -241,6 +286,39 @@ const CategoryTable = ({
           )}
         </TableBody>
       </Table>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="border-t border-border p-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(page)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <CategoryDetailModal
         category={viewCategory}
