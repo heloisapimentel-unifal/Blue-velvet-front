@@ -184,7 +184,7 @@ const Products = () => {
       });
       return;
     }
-
+    const selectedCategoryId = parseInt(formData.categoryId); // Garante que seja número
     const categoryName = categories.find(c => String(c.id) === String(formData.categoryId))?.name;
 
     try {
@@ -196,7 +196,7 @@ const Products = () => {
         shortDescription: formData.shortDescription,
         fullDescription: formData.fullDescription,
         brand: formData.brand,
-        categoryId: parseInt(formData.categoryId), // Backend espera número        
+        categoryId: selectedCategoryId, // Envia o ID numérico        
         // Conversão de moeda (R$ 1.000,00 -> 1000.00)
         list_price: parseFloat(formData.list_price.replace(/\./g, '').replace(',', '.')),
         discount: parseFloat(formData.discount.replace(',', '.')) || 0,
@@ -219,7 +219,11 @@ const Products = () => {
 
         setProducts(products.map((p) =>
           p.id === editingProduct.id
-            ? { ...updatedProduct, categoryName } // Atualiza localmente
+            ? { 
+                ...updatedProduct, 
+                categoryId: selectedCategoryId, // Força a atualização do ID localmente
+                categoryName: categoryName      // Atualiza o nome para exibição na tabela
+              }
             : p
         ));
         toast({
@@ -230,11 +234,14 @@ const Products = () => {
         // CREATE
         const newProduct = await createProduct(payload, selectedFile);
 
-        setProducts([...products, { ...newProduct, categoryName }]);
-        toast({
-          title: 'Produto criado',
-          description: `"${payload.name}" foi adicionado com sucesso.`,
-        });
+        setProducts([
+          ...products, 
+          { 
+            ...newProduct, 
+            categoryId: selectedCategoryId, // Força o ID no novo objeto
+            categoryName: categoryName      // Adiciona o nome
+          }
+        ]);
       }
 
       // Fecha o modal e limpa o form

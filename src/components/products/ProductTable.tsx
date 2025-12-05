@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -26,6 +26,27 @@ interface ProductTableProps {
   onDelete: (product: Product) => void;
 }
 
+// Esta função percorre toda a árvore e cria um "Dicionário" simples: { "id": "Nome" }
+// Isso resolve o problema de encontrar subcategorias, não importa onde elas estejam.
+const createCategoryMap = (categories: Category[]): Record<string, string> => {
+  const map: Record<string, string> = {};
+
+  const traverse = (nodes: Category[]) => {
+    for (const node of nodes) {
+      // Grava o ID e o Nome no mapa
+      map[String(node.id)] = node.name;
+      
+      // Se tiver filhos, mergulha neles (recursão)
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
+
+  traverse(categories);
+  return map;
+};
+
 const findCategoryInTree = (categories: Category[], id: string | number): Category | undefined => {
   for (const cat of categories) {
     // Verifica se é a categoria atual
@@ -45,9 +66,9 @@ const findCategoryInTree = (categories: Category[], id: string | number): Catego
 };
 
 const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTableProps) => {
-    console.log('DEBUG - Produtos recebidos no ProductTable:', products);
-
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const categoryMap = useMemo(() => createCategoryMap(categories), [categories]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -61,10 +82,9 @@ const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTablePr
     return listPrice * (1 - discount / 100);
 };
 
-// 3. Corrigir a função para usar a prop 'categories'
+// Agora a busca é instantânea e funciona para subcategorias
   const getCategoryName = (categoryId: number | string) => {
-    const cat = findCategoryInTree(categories, categoryId);
-    return cat ? cat.name : 'N/A'; // Retorna 'N/A' se não encontrar nem nos filhos
+    return categoryMap[String(categoryId)] || 'N/A';
   };
 
   return (

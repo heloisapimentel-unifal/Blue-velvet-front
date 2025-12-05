@@ -61,8 +61,6 @@ const Categories = () => {
       setIsLoading(true);
       const response: any = await getAllCategories(); 
       
-console.log("DEBUG - Resposta crua do Backend (Categories):", response);
-
       // 2. CORREÇÃO: Tratamento robusto da Paginação do Spring Boot
       let data: Category[] = [];
 

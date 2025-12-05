@@ -102,26 +102,30 @@ const CategoryTable = ({
     const isSearching = searchTerm.trim().length > 0;
     const isSorting = sortDirection !== 'default';
 
-    // 1. Se tiver busca, filtramos a lista plana (ignora hierarquia visual para focar no resultado)
+    // FIX CRÍTICO: Primeiro, identificamos a árvore correta.
+    // Como 'categories' vem do backend com TODAS as categorias (lista plana),
+    // precisamos filtrar apenas as raízes para iniciar o achatamento.
+    // Caso contrário, as subcategorias são processadas duas vezes (como filho e como item solto).
+    const rootCategories = categories.filter(cat => !cat.parentId);
+    
+    // Gera a lista linear correta baseada APENAS nas raízes (a recursão pega o resto)
+    const hierarchicalList = flattenHierarchicalData(rootCategories);
+
+    // 1. Se tiver busca
     if (isSearching) {
-       // Precisamos achatar tudo primeiro para buscar em todos os níveis
-       // Nota: Se sua busca no backend já filtra, use 'categories' direto. 
-       // Se o backend retorna a árvore filtrada, use a lógica de flatten abaixo.
-       // Assumindo filtro local simples:
-       const allFlat = flattenHierarchicalData(categories); 
-       return allFlat.filter(cat => 
+       // Buscamos na lista hierárquica já processada e limpa (sem duplicatas)
+       return hierarchicalList.filter(cat => 
          cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-       ).map(c => ({...c, level: 0})); // Remove indentação na busca
+       ).map(c => ({...c, level: 0})); 
     }
 
-    // 2. Se tiver ordenação forçada (Asc/Desc), ignoramos a árvore e mostramos lista plana ordenada
+    // 2. Se tiver ordenação forçada
     if (isSorting) {
-       const allFlat = flattenHierarchicalData(categories);
-       return allFlat.map(c => ({...c, level: 0})).sort(compareCategories);
+       return hierarchicalList.map(c => ({...c, level: 0})).sort(compareCategories);
     }
 
-    // 3. PADRÃO: Mostra a árvore processada (Pais -> Filhos indentados)
-    return flattenHierarchicalData(categories);
+    // 3. PADRÃO: Mostra a árvore processada
+    return hierarchicalList;
 
   }, [categories, searchTerm, sortDirection]);
 

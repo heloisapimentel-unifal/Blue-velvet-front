@@ -76,7 +76,15 @@ const ProductForm = ({
         } else if (Array.isArray(response)) {
           rawData = response;
         }
-        const flattened = flattenCategoriesForSelect(rawData);
+
+        // Filtramos apenas as categorias que NÃO têm pai (Raízes).
+        // A função flattenCategoriesForSelect vai encontrar os filhos através da propriedade .children
+        const rootCategories = rawData.filter((cat) => !cat.parentId);
+        
+        // Passamos a lista filtrada para a recursão
+        const flattened = flattenCategoriesForSelect(rootCategories);
+        // ---------------------
+
         setCategoriesOptions(flattened);
       } catch (error) {
         console.error("Erro ao carregar categorias:", error);

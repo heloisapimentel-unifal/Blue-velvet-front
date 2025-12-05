@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/input';
+import { useMemo } from 'react'; // 1. Adicione este import
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -49,6 +50,42 @@ const CategoryForm = ({
     setFormData({ ...formData, parentId: newparentId });
   };
   
+  const hierarchicalOptions = useMemo(() => {
+    // 1. Pega apenas as raízes (quem não tem pai definido)
+    // Isso evita que subcategorias apareçam duplicadas no nível 0
+    const rootCategories = allCategories.filter(c => !c.parentId);
+
+    // 2. Função recursiva para achatar a árvore e adicionar prefixos
+    const flatten = (categories: Category[], level = 0): { id: string; name: string }[] => {
+      let options: { id: string; name: string }[] = [];
+      
+      // Ordena alfabeticamente
+      const sorted = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const cat of sorted) {
+        // PULA a própria categoria que está sendo editada 
+        // (ela não pode ser pai dela mesma, nem seus filhos podem ser seus pais)
+        if (String(cat.id) === String(currentCategoryId)) continue;
+
+        // Cria o prefixo visual (ex: "— — ")
+        const prefix = level > 0 ? "— ".repeat(level) : "";
+        
+        options.push({
+          id: cat.id.toString(),
+          name: `${prefix}${cat.name}`
+        });
+
+        // Se tiver filhos, processa eles recursivamente
+        if (cat.children && cat.children.length > 0) {
+          options = [...options, ...flatten(cat.children, level + 1)];
+        }
+      }
+      return options;
+    };
+
+    return flatten(rootCategories);
+  }, [allCategories, currentCategoryId]);
+
   // Filtra as categorias para que a categoria em edição não seja selecionada como sua própria pai.
   // Isso impede que a lista contenha a própria categoria.
   const availableParentCategories = allCategories.filter(
@@ -118,12 +155,12 @@ const CategoryForm = ({
                 (Categoria Principal / Top-level)
               </SelectItem>
               {/* Lista de categorias existentes (agora plana e simples) */}
-              {availableParentCategories.map((cat) => (
+              {hierarchicalOptions.map((opt) => (
                 <SelectItem 
-                    key={cat.id} 
-                    value={cat.id.toString()}                
+                    key={opt.id} 
+                    value={opt.id}                
                   >
-                  {cat.name}
+                  {opt.name}
                 </SelectItem>
               ))}
             </SelectContent>

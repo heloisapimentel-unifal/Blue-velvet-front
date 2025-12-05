@@ -49,7 +49,6 @@ const Storefront = () => {
           data = response;
         }
 
-        console.log("Categorias carregadas:", data); // Log para debug
         setCategories(data);
       } catch (error) {
         console.error("Erro ao carregar vitrine:", error);
