@@ -23,10 +23,11 @@ export type CategoryFormData = {
 };
 
 
-// --- FUNÇÃO AJUSTADA PARA SUPABASE ---
+// --- FUNÇÃO AJUSTADA COM PLACEHOLDER ---
 export const getCategoryImageUrl = (url: string | null | undefined): string => {
-
-    // 2. Como o Supabase já entrega a URL completa, retornamos ela direto.
-    // Isso também funciona se no futuro você misturar links externos.
+    // Se não houver URL, retorna o placeholder
+    if (!url || url.trim() === '') {
+      return '/images/category-placeholder.png';
+    }
     return url; 
 };
