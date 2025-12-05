@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,19 +20,20 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { 
   Category, 
-  CategoryFormData, 
-  initialCategories 
+  CategoryFormData
 } from '@/types/category'; 
+
+import { getAllCategories, createCategory, updateCategory, deleteCategory } from '@/services/categoryService';
 
 import CategoryForm from '@/components/categories/CategoryForm'; 
 import CategoryTable from '@/components/categories/CategoryTable'; 
 
-// Form Data inicial para nova categoria
+// 1. CORREÇÃO: Usar nomes que batem com o Backend (camelCase e 'image')
 const emptyCategoryFormData: CategoryFormData = {
   name: '',
-  imageFilename: '',
-  parentId: null,
-  isEnabled: true,
+  existingImageUrl: '',      // Mudado de image_url para image
+  parentId: null, // Mudado de parent_id para parentId
+  enabled: true,
 };
 
 const Categories = () => {
@@ -40,14 +41,56 @@ const Categories = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [categoriesList, setCategoriesList] = useState<Category[]>(initialCategories);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
-  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>(emptyCategoryFormData);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const response: any = await getAllCategories(); 
+      
+console.log("DEBUG - Resposta crua do Backend (Categories):", response);
+
+      // 2. CORREÇÃO: Tratamento robusto da Paginação do Spring Boot
+      let data: Category[] = [];
+
+      if (response.content && Array.isArray(response.content)) {
+        // Cenário: Paginação { content: [...], pageable: ... }
+        data = response.content;
+      } else if (Array.isArray(response)) {
+        // Cenário: Lista simples [...]
+        data = response;
+      } else {
+        console.warn("Formato inesperado:", response);
+        data = [];
+      }
+      
+      setCategoriesList(data);
+
+    } catch (error) {
+      console.error("Erro no fetch:", error);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar as categorias.",
+        variant: "destructive"
+      });
+      setCategoriesList([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -62,17 +105,21 @@ const Categories = () => {
   const openCreateDialog = () => {
     setEditingCategory(null);
     setFormData(emptyCategoryFormData);
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (category: Category) => {
     setEditingCategory(category);
+    // 3. CORREÇÃO: Mapear os campos corretos vindo do objeto Category
     setFormData({
-      name: category.name,
-      imageFilename: category.imageFilename,
-      parentId: category.parentId,
-      isEnabled: category.isEnabled,
-    });
+    name: category.name,
+    parentId: category.parentId,
+    enabled: category.enabled,
+    existingImageUrl: category.image,
+    newImageFile: null,
+  });
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
@@ -81,62 +128,73 @@ const Categories = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.imageFilename) {
+    if (!formData.name) {
       toast({
         title: 'Erro',
-        description: 'Preencha todos os campos obrigatórios.',
+        description: 'O nome da categoria é obrigatório.',
         variant: 'destructive',
       });
       return;
     }
 
-    const now = new Date().toISOString();
-    const parentCategory = categoriesList.find(c => c.id === formData.parentId);
-    const parentName = parentCategory ? parentCategory.name : undefined;
+    try {
+      setIsLoading(true);
 
-    if (editingCategory) {
-      setCategoriesList(categoriesList.map((c) =>
-        c.id === editingCategory.id
-          ? {
-              ...c,
-              name: formData.name,
-              imageFilename: formData.imageFilename,
-              parentId: formData.parentId,
-              parentName: parentName,
-              isEnabled: formData.isEnabled,
-              updateTime: now,
-            }
-          : c
-      ));
-      toast({
-        title: 'Categoria atualizada',
-        description: `"${formData.name}" foi atualizada com sucesso.`,
-      });
-    } else {
-      const newCategory: Category = {
-        id: Date.now().toString(), 
+      // 4. CORREÇÃO: Payload com chaves em camelCase para o Java aceitar
+      const payload = {
         name: formData.name,
-        imageFilename: formData.imageFilename,
-        parentId: formData.parentId,
-        parentName: parentName,
-        isEnabled: formData.isEnabled,
-        creationTime: now,
+        parentId: formData.parentId, // Envia 'parentId', não 'parent_id'
+        enabled: formData.enabled,
+        // image: Não enviamos string aqui se for upload, o backend gerencia
       };
-      setCategoriesList([...categoriesList, newCategory]);
-      toast({
-        title: 'Categoria criada',
-        description: `"${formData.name}" foi adicionada com sucesso.`,
-      });
-    }
 
-    setIsDialogOpen(false);
+      if (editingCategory) {
+        // UPDATE
+        const updatedCategory = await updateCategory(editingCategory.id, payload, selectedFile);
+        
+        setCategoriesList(categoriesList.map((c) =>
+          c.id === editingCategory.id ? updatedCategory : c
+        ));
+
+        toast({
+          title: 'Categoria atualizada',
+          description: `"${updatedCategory.name}" foi atualizada com sucesso.`,
+        });
+
+      } else {
+        // CREATE
+        const newCategory = await createCategory(payload, selectedFile);
+        
+        setCategoriesList([...categoriesList, newCategory]);
+        
+        toast({
+          title: 'Categoria criada',
+          description: `"${newCategory.name}" foi adicionada com sucesso.`,
+        });
+      }
+
+      setIsDialogOpen(false);
+      setFormData(emptyCategoryFormData);
+      setSelectedFile(null);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Erro ao salvar',
+        description: error instanceof Error ? error.message : 'Falha na comunicação com o servidor.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (categoryToDelete) {
+      // 5. CORREÇÃO: Validar usando parentId (camelCase)
       const hasChildren = categoriesList.some(c => c.parentId === categoryToDelete.id);
 
       if (hasChildren) {
@@ -149,13 +207,28 @@ const Categories = () => {
         return;
       }
       
-      setCategoriesList(categoriesList.filter((c) => c.id !== categoryToDelete.id));
-      toast({
-        title: 'Categoria excluída',
-        description: `"${categoryToDelete.name}" foi removida.`,
-      });
-      setIsDeleteDialogOpen(false);
-      setCategoryToDelete(null);
+      try {
+        setIsLoading(true);
+        await deleteCategory(categoryToDelete.id);
+
+        setCategoriesList(categoriesList.filter((c) => c.id !== categoryToDelete.id));
+        
+        toast({
+          title: 'Categoria excluída',
+          description: `"${categoryToDelete.name}" foi removida.`,
+        });
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: 'Erro ao excluir',
+          description: 'Não foi possível excluir a categoria.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+        setIsDeleteDialogOpen(false);
+        setCategoryToDelete(null);
+      }
     }
   };
 
@@ -187,10 +260,8 @@ const Categories = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Actions Bar - Layout com Input e Botões */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6 animate-fade-in">
           
-          {/* Input de Busca */}
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -201,7 +272,6 @@ const Categories = () => {
             />
           </div>
           
-          {/* Botões de Ação */}
           <div className="flex gap-3 w-full sm:w-auto justify-end">
             <Button variant="outline" asChild>
                 <Link to="/products">
@@ -218,19 +288,24 @@ const Categories = () => {
 
         {/* Categories Table */}
         <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <CategoryTable
-            categories={categoriesList}    // Passa a lista COMPLETA
-            allCategories={categoriesList} // Passa para o modal de detalhes
-            searchTerm={searchTerm}        // Passa o termo para a tabela filtrar
-            onEdit={openEditDialog}
-            onDelete={openDeleteDialog}
-          />
+          {isLoading && categoriesList.length === 0 ? (
+            <div className="flex justify-center py-10">Carregando categorias...</div>
+          ) : (
+            <CategoryTable
+              categories={categoriesList || []}    
+              allCategories={categoriesList || []} 
+              searchTerm={searchTerm}        
+              onEdit={openEditDialog}
+              onDelete={openDeleteDialog}
+            />
+          )}
         </div>
 
         {/* Stats */}
         <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <span>{categoriesList.length} categoria(s)</span>
-          <span>Ativas: {categoriesList.filter(c => c.isEnabled).length}</span>
+          <span>{categoriesList?.length || 0} categoria(s)</span>
+          {/* Verifica se é array antes do filter para evitar erro */}
+          <span>Ativas: {Array.isArray(categoriesList) ? categoriesList.filter(c => c.enabled).length : 0}</span>
         </div>
       </main>
 
@@ -245,10 +320,12 @@ const Categories = () => {
           <CategoryForm
             formData={formData}
             setFormData={setFormData}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
             onSubmit={handleSubmit}
             onCancel={() => setIsDialogOpen(false)}
             isEditing={!!editingCategory}
-            allCategories={categoriesList}
+            allCategories={categoriesList || []} // Garante array
             currentCategoryId={editingCategory?.id}
           />
         </DialogContent>
@@ -267,8 +344,8 @@ const Categories = () => {
             <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Excluir
+            <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
+              {isLoading ? 'Excluindo...' : 'Excluir'}
             </Button>
           </div>
         </DialogContent>

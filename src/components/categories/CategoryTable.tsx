@@ -29,21 +29,21 @@ interface CategoryTableProps {
 
 // Interface para as categorias hierárquicas a serem exibidas na tabela
 interface HierarchicalCategory extends Category {
-    level: number;
+  level: number;
 }
 
 // Tipo para os 3 estados de ordenação
 type SortDirection = 'default' | 'asc' | 'desc';
 
-const CategoryTable = ({ 
-  categories, 
-  allCategories, 
-  onEdit, 
-  onDelete, 
-  highlightIds, 
+const CategoryTable = ({
+  categories,
+  allCategories,
+  onEdit,
+  onDelete,
+  highlightIds,
   searchTerm // Recebendo o termo de busca
 }: CategoryTableProps) => {
-  
+
   const [viewCategory, setViewCategory] = useState<Category | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('default');
 
@@ -71,70 +71,57 @@ const CategoryTable = ({
 
   // --- LÓGICA DE HIERARQUIA ---
 
-  // Constrói a árvore (apenas para o estado 'default')
-  const getHierarchicalList = (categories: Category[]): HierarchicalCategory[] => {
-    const hierarchicalList: HierarchicalCategory[] = [];
-    const categoryMap = new Map<string | null, Category[]>();
+// Dentro de CategoryTable.tsx
 
-    // 1. Criar mapa de pais e filhos
-    categories.forEach(cat => {
-      const parentId = cat.parentId;
-      if (!categoryMap.has(parentId)) {
-        categoryMap.set(parentId, []);
-      }
-      categoryMap.get(parentId)!.push(cat);
-    });
-
-    // 2. Função de travessia recursiva
-    const traverse = (parentId: string | null, level: number) => {
-      const children = categoryMap.get(parentId) || [];
-      // Ordena alfabeticamente os irmãos na árvore
-      children.sort((a, b) => a.name.localeCompare(b.name)); 
-      
-      for (const cat of children) {
-        hierarchicalList.push({ ...cat, level });
-        traverse(cat.id, level + 1);
-      }
-    };
-
-    // Inicia a travessia
-    traverse(null, 0);
-    return hierarchicalList;
-  };
+  // --- NOVA LÓGICA DE HIERARQUIA ---
   
-  // --- LÓGICA PRINCIPAL DE EXIBIÇÃO ---
+  // Essa função pega a árvore (que vem do backend) e transforma em uma lista linear
+  // para a tabela conseguir desenhar, mas mantendo a propriedade 'level' para indentação.
+  const flattenHierarchicalData = (nodes: Category[], level = 0): HierarchicalCategory[] => {
+    let result: HierarchicalCategory[] = [];
+
+    // Ordena alfabeticamente neste nível
+    const sortedNodes = [...nodes].sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const node of sortedNodes) {
+      // 1. Adiciona o pai atual
+      result.push({ ...node, level });
+
+      // 2. Se tiver filhos (children), processa eles recursivamente aumentando o nível
+      if (node.children && node.children.length > 0) {
+        const childrenFlat = flattenHierarchicalData(node.children, level + 1);
+        result = [...result, ...childrenFlat];
+      }
+    }
+
+    return result;
+  };
+
+  // --- LÓGICA DE EXIBIÇÃO ---
   const displayedCategories = useMemo(() => {
     const isSearching = searchTerm.trim().length > 0;
     const isSorting = sortDirection !== 'default';
 
-    // REGRA: Se NÃO tem busca E NÃO tem ordenação forçada -> Mostra Hierarquia (Árvore)
-    if (!isSearching && !isSorting) {
-      return getHierarchicalList(categories);
-    }
-
-    // CASO CONTRÁRIO -> Mostra Lista Plana (Flat List)
-    
-    // 1. Começa com todas ou filtra se tiver busca
-    let flatList = categories;
-    
+    // 1. Se tiver busca, filtramos a lista plana (ignora hierarquia visual para focar no resultado)
     if (isSearching) {
-      flatList = flatList.filter((cat) => 
-        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+       // Precisamos achatar tudo primeiro para buscar em todos os níveis
+       // Nota: Se sua busca no backend já filtra, use 'categories' direto. 
+       // Se o backend retorna a árvore filtrada, use a lógica de flatten abaixo.
+       // Assumindo filtro local simples:
+       const allFlat = flattenHierarchicalData(categories); 
+       return allFlat.filter(cat => 
+         cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+       ).map(c => ({...c, level: 0})); // Remove indentação na busca
     }
 
-    // 2. Remove indentação (level 0)
-    let processedList = flatList.map((cat) => ({ ...cat, level: 0 }));
-
-    // 3. Aplica a Ordenação
+    // 2. Se tiver ordenação forçada (Asc/Desc), ignoramos a árvore e mostramos lista plana ordenada
     if (isSorting) {
-      processedList.sort(compareCategories);
-    } else {
-      // Se estiver buscando (mas sem sort), ordena A-Z por padrão
-      processedList.sort((a, b) => a.name.localeCompare(b.name));
+       const allFlat = flattenHierarchicalData(categories);
+       return allFlat.map(c => ({...c, level: 0})).sort(compareCategories);
     }
-    
-    return processedList;
+
+    // 3. PADRÃO: Mostra a árvore processada (Pais -> Filhos indentados)
+    return flattenHierarchicalData(categories);
 
   }, [categories, searchTerm, sortDirection]);
 
@@ -145,8 +132,8 @@ const CategoryTable = ({
           <TableRow className="hover:bg-transparent">
             {/* Cabeçalho Clicável para Ordenação */}
             <TableHead className="w-[400px]">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={toggleSort}
                 className="-ml-3 h-8 hover:bg-muted/50"
               >
@@ -154,7 +141,7 @@ const CategoryTable = ({
                 {getSortIcon()}
               </Button>
             </TableHead>
-            
+
             <TableHead className="text-center w-[120px]">Status</TableHead>
             <TableHead className="text-right w-[100px]">Ações</TableHead>
           </TableRow>
@@ -163,64 +150,62 @@ const CategoryTable = ({
           {displayedCategories.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
-                {searchTerm 
-                  ? `Nenhum resultado para "${searchTerm}"` 
+                {searchTerm
+                  ? `Nenhum resultado para "${searchTerm}"`
                   : 'Nenhuma categoria encontrada.'}
               </TableCell>
             </TableRow>
           ) : (
             displayedCategories.map((category) => (
-              <TableRow 
-                key={category.id} 
-                className={`group transition-colors ${
-                  highlightIds?.has(category.id)
-                    ? 'bg-primary/10 border-l-4 border-l-primary font-semibold' 
+              <TableRow
+                key={category.id}
+                className={`group transition-colors ${highlightIds?.has(category.id.toString())
+                    ? 'bg-primary/10 border-l-4 border-l-primary font-semibold'
                     : ''
-                }`}
+                  }`}
               >
-                
+
                 {/* CÉLULA CATEGORIA (Imagem + Nome + Hierarquia/Flat) */}
                 <TableCell className="font-medium text-foreground py-2">
-                  <div 
-                    className="flex items-center gap-3" 
+                  <div
+                    className="flex items-center gap-3"
                     // Se for Flat (level 0), padding é 0. Se for Árvore, tem padding.
-                    style={{ paddingLeft: `${category.level * 20}px` }} 
+                    style={{ paddingLeft: `${category.level * 20}px` }}
                   >
                     {/* Imagem */}
-                    <img 
-                        src={getCategoryImageUrl(category.imageFilename)}
-                        alt={`Imagem de ${category.name}`}
-                        className="w-10 h-10 object-cover rounded-md border border-border flex-shrink-0"
-                        onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/placeholder.png'; 
-                            target.onerror = null;
-                        }}
+                    <img
+                      src={getCategoryImageUrl(category.image)}
+                      alt={`Imagem de ${category.name}`}
+                      className="w-10 h-10 object-cover rounded-md border border-border flex-shrink-0"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/placeholder.png';
+                        target.onerror = null;
+                      }}
                     />
-                    
+
                     {/* Texto com Ícone e Nome */}
                     <div className="flex items-center">
-                        <Tag className={`w-4 h-4 mr-2 ${category.level === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
-                        {/* Traço hierárquico só aparece se level > 0 */}
-                        {category.level > 0 && <span className="text-muted-foreground mr-1">—</span>}
-                        {category.name}
+                      <Tag className={`w-4 h-4 mr-2 ${category.level === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
+                      {/* Traço hierárquico só aparece se level > 0 */}
+                      {category.level > 0 && <span className="text-muted-foreground mr-1">—</span>}
+                      {category.name}
                     </div>
                   </div>
                 </TableCell>
-                
+
                 <TableCell className="text-center">
-                  <span 
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      category.isEnabled 
-                        ? 'bg-primary/10 text-primary' 
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${category.enabled
+                        ? 'bg-primary/10 text-primary'
                         : 'bg-muted text-muted-foreground'
-                    }`}
+                      }`}
                   >
-                    {category.isEnabled ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                    {category.isEnabled ? 'Ativa' : 'Inativa'}
+                    {category.enabled ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                    {category.enabled ? 'Ativa' : 'Inativa'}
                   </span>
                 </TableCell>
-                
+
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -237,7 +222,7 @@ const CategoryTable = ({
                         <Pencil className="w-4 h-4 mr-2" />
                         Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => onDelete(category)}
                         className="text-destructive focus:text-destructive"
                       >

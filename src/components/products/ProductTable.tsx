@@ -15,16 +15,38 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2, Eye, Check, X, Package } from 'lucide-react';
-import { Product, categories } from '@/types/product';
+import { Product} from '@/types/product';
 import ProductDetailModal from './ProductDetailModal';
+import { Category } from '@/types/category'; // 1. Importar o tipo Category
 
 interface ProductTableProps {
   products: Product[];
+  categories: Category[]; // 2. Adicionar categories nas props
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
 }
 
-const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
+const findCategoryInTree = (categories: Category[], id: string | number): Category | undefined => {
+  for (const cat of categories) {
+    // Verifica se é a categoria atual
+    if (String(cat.id) === String(id)) {
+      return cat;
+    }
+    
+    // Se tiver filhos, mergulha neles (recursão)
+    if (cat.children && cat.children.length > 0) {
+      const foundInChildren = findCategoryInTree(cat.children, id);
+      if (foundInChildren) {
+        return foundInChildren;
+      }
+    }
+  }
+  return undefined;
+};
+
+const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTableProps) => {
+    console.log('DEBUG - Produtos recebidos no ProductTable:', products);
+
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -33,12 +55,16 @@ const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
     }).format(value);
   };
 
-  const calculateFinalPrice = (listPrice: number, discount: number) => {
+  const calculateFinalPrice = (listPrice?: number, discount?: number) => {
+    if (!listPrice || isNaN(listPrice)) return 0;
+    if (!discount || isNaN(discount)) return listPrice;
     return listPrice * (1 - discount / 100);
-  };
+};
 
-  const getCategoryName = (categoryId: number) => {
-    return categories.find(c => c.id === categoryId)?.name || 'N/A';
+// 3. Corrigir a função para usar a prop 'categories'
+  const getCategoryName = (categoryId: number | string) => {
+    const cat = findCategoryInTree(categories, categoryId);
+    return cat ? cat.name : 'N/A'; // Retorna 'N/A' se não encontrar nem nos filhos
   };
 
   return (
@@ -96,11 +122,11 @@ const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
                 <TableCell className="text-right">
                   <div>
                     <p className="font-medium">
-                      {formatCurrency(calculateFinalPrice(product.listPrice, product.discount))}
+                      {formatCurrency(calculateFinalPrice(product.list_price, product.discount))}
                     </p>
                     {product.discount > 0 && (
                       <p className="text-xs text-muted-foreground line-through">
-                        {formatCurrency(product.listPrice)}
+                        {formatCurrency(product.list_price)}
                       </p>
                     )}
                   </div>
@@ -162,6 +188,7 @@ const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
 
       <ProductDetailModal
         product={viewProduct}
+        categories={categories}
         open={!!viewProduct}
         onClose={() => setViewProduct(null)}
       />

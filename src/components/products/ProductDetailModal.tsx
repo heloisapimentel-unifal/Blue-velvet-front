@@ -6,16 +6,18 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Product, categories } from '@/types/product';
+import { Product} from '@/types/product';
+import { Category } from '@/types/category'; // 1. Importe o Tipo Category
 import { Check, X, Package, Tag, Calendar, Ruler } from 'lucide-react';
 
 interface ProductDetailModalProps {
   product: Product | null;
+  categories: Category[]; // 2. Adicione esta prop para receber a lista de dados
   open: boolean;
   onClose: () => void;
 }
 
-const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps) => {
+const ProductDetailModal = ({ product, categories, open, onClose }: ProductDetailModalProps) => {
   if (!product) return null;
 
   const formatCurrency = (value: number) => {
@@ -25,12 +27,8 @@ const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps)
     }).format(value);
   };
 
-  const calculateFinalPrice = (listPrice: number, discount: number) => {
-    return listPrice * (1 - discount / 100);
-  };
-
-  const getCategoryName = (categoryId: number) => {
-    return categories.find(c => c.id === categoryId)?.name || 'N/A';
+  const calculateFinalPrice = (list_price: number, discount: number) => {
+    return list_price * (1 - discount / 100);
   };
 
   const formatDate = (dateString: string) => {
@@ -41,6 +39,15 @@ const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps)
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // 3. Função para buscar o nome da categoria usando a lista que recebemos
+  const getCategoryName = () => {
+    // Tenta achar na lista de categorias pelo ID
+    const foundCategory = categories.find(c => String(c.id) === String(product.categoryId));
+    
+    // Retorna o nome achado, ou o nome que veio no produto, ou "Desconhecida"
+    return foundCategory?.name || product.categoryName || 'Categoria Desconhecida';
   };
 
   return (
@@ -88,7 +95,7 @@ const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps)
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-secondary/50 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Preço de Lista</p>
-                <p className="font-semibold">{formatCurrency(product.listPrice)}</p>
+                <p className="font-semibold">{formatCurrency(product.list_price)}</p>
               </div>
               <div className="bg-secondary/50 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Desconto</p>
@@ -97,7 +104,7 @@ const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps)
               <div className="bg-primary/10 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Preço Final</p>
                 <p className="font-semibold text-primary">
-                  {formatCurrency(calculateFinalPrice(product.listPrice, product.discount))}
+                  {formatCurrency(calculateFinalPrice(product.list_price, product.discount))}
                 </p>
               </div>
               <div className="bg-secondary/50 p-3 rounded-lg">
@@ -122,13 +129,13 @@ const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps)
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Categoria</p>
-              <p className="font-medium">{getCategoryName(product.categoryId)}</p>
+              <p className="font-medium">{getCategoryName()}</p>
             </div>
           </div>
 
           <Separator />
 
-          {/* Dimensions */}
+          {/* Dimension */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Ruler className="w-4 h-4" /> Dimensões
@@ -136,19 +143,19 @@ const ProductDetailModal = ({ product, open, onClose }: ProductDetailModalProps)
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-secondary/50 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Peso</p>
-                <p className="font-semibold">{product.dimensions.weight} kg</p>
+                <p className="font-semibold">{product.dimension.weight} kg</p>
               </div>
               <div className="bg-secondary/50 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Largura</p>
-                <p className="font-semibold">{product.dimensions.width} cm</p>
+                <p className="font-semibold">{product.dimension.width} cm</p>
               </div>
               <div className="bg-secondary/50 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Altura</p>
-                <p className="font-semibold">{product.dimensions.height} cm</p>
+                <p className="font-semibold">{product.dimension.height} cm</p>
               </div>
               <div className="bg-secondary/50 p-3 rounded-lg">
                 <p className="text-xs text-muted-foreground">Comprimento</p>
-                <p className="font-semibold">{product.dimensions.length} cm</p>
+                <p className="font-semibold">{product.dimension.length} cm</p>
               </div>
             </div>
           </div>

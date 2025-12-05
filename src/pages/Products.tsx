@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,11 @@ import {
   Guitar,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product, ProductFormData, initialProducts, categories } from '@/types/product';
+import { Product, ProductFormData } from '@/types/product';
+import { Category } from '@/types/category';
+// Importamos os serviços
+import { getAllProducts, createProduct, updateProduct, deleteProduct } from '@/services/productService';
+import { getAllCategories } from '@/services/categoryService'; // Serviço de categorias
 import ProductForm from '@/components/products/ProductForm';
 import ProductTable from '@/components/products/ProductTable';
 
@@ -30,7 +34,7 @@ const emptyFormData: ProductFormData = {
   fullDescription: '',
   brand: '',
   categoryId: '',
-  listPrice: '',
+  list_price: '',
   discount: '0',
   isEnabled: true,
   inStock: true,
@@ -45,14 +49,76 @@ const Products = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+
+  // 1. Mudança: Inicia vazio, pois os dados virão do backend
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // 2. Novo estado para controlar o loading
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Estados existentes...
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(emptyFormData);
+
+  // 3. Novo: UseEffect para buscar os dados ao carregar a página
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+
+      // 1. Buscamos Produtos e Categorias em paralelo (apenas uma vez)
+      const [productsData, categoriesResponse] = await Promise.all([
+        getAllProducts(),
+        getAllCategories()
+      ]);
+
+      // 2. Tratamento robusto para extrair a lista de categorias (Paginação ou Array)
+      let categoriesList: Category[] = [];
+      const catsResAny = categoriesResponse as any;
+
+      if (catsResAny.content && Array.isArray(catsResAny.content)) {
+        // Se vier paginado (Spring Page)
+        categoriesList = catsResAny.content;
+      } else if (Array.isArray(categoriesResponse)) {
+        // Se vier lista simples
+        categoriesList = categoriesResponse;
+      }
+
+      // 3. Atualizamos o estado das categorias para usar no resto da tela
+      setCategories(categoriesList);
+
+      // 4. Cruzamos os dados usando a lista LOCAL 'categoriesList'
+      // IMPORTANTE: Usamos 'categoriesList' e não o estado 'categories' 
+      // porque o estado só atualiza no próximo render.
+      const productsWithCategory = productsData.map((p) => ({
+        ...p,
+        // Converte IDs para String para garantir a comparação (100 === "100")
+        categoryName: p.categoryName || categoriesList.find(c => String(c.id) === String(p.categoryId))?.name
+      }));
+
+      // 5. Salvamos os produtos já com os nomes
+      setProducts(productsWithCategory);
+
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar os dados do servidor.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const handleLogout = () => {
     logout();
@@ -64,16 +130,19 @@ const Products = () => {
     return null;
   }
 
+  // Lógica de filtro corrigida para usar o estado 'categories' real
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      categories.find(c => c.id === product.categoryId)?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      // Busca o nome da categoria na lista carregada do backend
+      categories.find(c => String(c.id) === String(product.categoryId))?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const openCreateDialog = () => {
     setEditingProduct(null);
     setFormData(emptyFormData);
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
@@ -84,17 +153,18 @@ const Products = () => {
       shortDescription: product.shortDescription,
       fullDescription: product.fullDescription,
       brand: product.brand,
-      categoryId: product.categoryId.toString(),
-      listPrice: product.listPrice.toString(),
+      categoryId: String(product.categoryId), // Garante string para o select
+      list_price: String(product.list_price),  // Atenção ao camelCase listPrice
       discount: product.discount.toString(),
       isEnabled: product.isEnabled,
       inStock: product.inStock,
-      weight: product.dimensions.weight.toString(),
-      width: product.dimensions.width.toString(),
-      height: product.dimensions.height.toString(),
-      length: product.dimensions.length.toString(),
+      weight: product.dimension.weight.toString(),
+      width: product.dimension.width.toString(),
+      height: product.dimension.height.toString(),
+      length: product.dimension.length.toString(),
       cost: product.cost.toString(),
     });
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
@@ -103,10 +173,10 @@ const Products = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.listPrice || !formData.categoryId || !formData.brand) {
+
+    if (!formData.name || !formData.list_price || !formData.categoryId || !formData.brand) {
       toast({
         title: 'Erro',
         description: 'Preencha todos os campos obrigatórios.',
@@ -115,82 +185,96 @@ const Products = () => {
       return;
     }
 
-    const now = new Date().toISOString();
-    const categoryName = categories.find(c => c.id === parseInt(formData.categoryId))?.name;
+    const categoryName = categories.find(c => String(c.id) === String(formData.categoryId))?.name;
 
-    if (editingProduct) {
-      setProducts(products.map((p) =>
-        p.id === editingProduct.id
-          ? {
-              ...p,
-              name: formData.name,
-              shortDescription: formData.shortDescription,
-              fullDescription: formData.fullDescription,
-              brand: formData.brand,
-              categoryId: parseInt(formData.categoryId),
-              categoryName,
-              listPrice: parseFloat(formData.listPrice),
-              discount: parseFloat(formData.discount) || 0,
-              isEnabled: formData.isEnabled,
-              inStock: formData.inStock,
-              updateTime: now,
-              dimensions: {
-                weight: parseFloat(formData.weight) || 0,
-                width: parseFloat(formData.width) || 0,
-                height: parseFloat(formData.height) || 0,
-                length: parseFloat(formData.length) || 0,
-              },
-              cost: parseFloat(formData.cost) || 0,
-            }
-          : p
-      ));
-      toast({
-        title: 'Produto atualizado',
-        description: `"${formData.name}" foi atualizado com sucesso.`,
-      });
-    } else {
-      const newProduct: Product = {
-        id: Date.now().toString(),
+    try {
+      setIsLoading(true); // Opcional: mostrar loading durante o salvamento
+
+
+      const payload = {
         name: formData.name,
         shortDescription: formData.shortDescription,
         fullDescription: formData.fullDescription,
         brand: formData.brand,
-        categoryId: parseInt(formData.categoryId),
-        categoryName,
-        listPrice: parseFloat(formData.listPrice),
-        discount: parseFloat(formData.discount) || 0,
+        categoryId: parseInt(formData.categoryId), // Backend espera número        
+        // Conversão de moeda (R$ 1.000,00 -> 1000.00)
+        list_price: parseFloat(formData.list_price.replace(/\./g, '').replace(',', '.')),
+        discount: parseFloat(formData.discount.replace(',', '.')) || 0,
+        cost: parseFloat(formData.cost.replace(/\./g, '').replace(',', '.')) || 0,
         isEnabled: formData.isEnabled,
         inStock: formData.inStock,
-        creationTime: now,
-        updateTime: now,
-        dimensions: {
-          weight: parseFloat(formData.weight) || 0,
-          width: parseFloat(formData.width) || 0,
-          height: parseFloat(formData.height) || 0,
-          length: parseFloat(formData.length) || 0,
-        },
-        cost: parseFloat(formData.cost) || 0,
-        details: [],
-      };
-      setProducts([...products, newProduct]);
-      toast({
-        title: 'Produto criado',
-        description: `"${formData.name}" foi adicionado com sucesso.`,
-      });
-    }
 
-    setIsDialogOpen(false);
+        // Objeto embutido ProductDimension
+        dimension: {
+          weight: parseFloat(formData.weight.replace(',', '.')) || 0,
+          width: parseFloat(formData.width.replace(',', '.')) || 0,
+          height: parseFloat(formData.height.replace(',', '.')) || 0,
+          length: parseFloat(formData.length.replace(',', '.')) || 0,
+        }
+      };
+
+      if (editingProduct) {
+        // UPDATE
+        const updatedProduct = await updateProduct(editingProduct.id, payload, selectedFile);
+
+        setProducts(products.map((p) =>
+          p.id === editingProduct.id
+            ? { ...updatedProduct, categoryName } // Atualiza localmente
+            : p
+        ));
+        toast({
+          title: 'Produto atualizado',
+          description: `"${payload.name}" foi atualizado com sucesso.`,
+        });
+      } else {
+        // CREATE
+        const newProduct = await createProduct(payload, selectedFile);
+
+        setProducts([...products, { ...newProduct, categoryName }]);
+        toast({
+          title: 'Produto criado',
+          description: `"${payload.name}" foi adicionado com sucesso.`,
+        });
+      }
+
+      // Fecha o modal e limpa o form
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+      setFormData(emptyFormData);
+      setSelectedFile(null)
+
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar as alterações.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (productToDelete) {
-      setProducts(products.filter((p) => p.id !== productToDelete.id));
-      toast({
-        title: 'Produto excluído',
-        description: `"${productToDelete.name}" foi removido.`,
-      });
-      setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
+      try {
+        await deleteProduct(productToDelete.id);
+        setProducts(products.filter((p) => p.id !== productToDelete.id));
+        toast({
+          title: 'Produto excluído',
+          description: `"${productToDelete.name}" foi removido.`,
+        });
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: 'Erro ao excluir',
+          description: 'Falha ao remover produto.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setProductToDelete(null);
+      }
     }
   };
 
@@ -208,7 +292,7 @@ const Products = () => {
             </div>
             <span className="text-xl font-semibold text-foreground">Catálogo de Produtos</span>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="hidden sm:block text-sm text-muted-foreground">
               {user.name}
@@ -233,14 +317,14 @@ const Products = () => {
               className="pl-10"
             />
           </div>
-          
+
           {/* Botões de Ação */}
           <div className="flex gap-3">
             <Button variant="outline" asChild>
-                <Link to="/categories">
-                    <Tag className="w-4 h-4 mr-2" />
-                    Categorias
-                </Link>
+              <Link to="/categories">
+                <Tag className="w-4 h-4 mr-2" />
+                Categorias
+              </Link>
             </Button>
             {/* Botão de Novo Produto */}
             <Button onClick={openCreateDialog}>
@@ -248,16 +332,24 @@ const Products = () => {
               Novo Produto
             </Button>
           </div>
-          
+
         </div>
 
         {/* Products Table */}
         <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <ProductTable
-            products={filteredProducts}
-            onEdit={openEditDialog}
-            onDelete={openDeleteDialog}
-          />
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-2">Carregando produtos...</span>
+            </div>
+          ) : (
+            <ProductTable
+              products={filteredProducts}
+              categories={categories}
+              onEdit={openEditDialog}
+              onDelete={openDeleteDialog}
+            />
+          )}
         </div>
 
         {/* Stats */}
@@ -279,6 +371,8 @@ const Products = () => {
           <ProductForm
             formData={formData}
             setFormData={setFormData}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
             onSubmit={handleSubmit}
             onCancel={() => setIsDialogOpen(false)}
             isEditing={!!editingProduct}

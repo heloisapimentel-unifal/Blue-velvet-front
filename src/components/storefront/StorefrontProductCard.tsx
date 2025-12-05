@@ -17,7 +17,7 @@ const StorefrontProductCard = ({ product, index, onViewMore }: StorefrontProduct
     }).format(price);
   };
 
-  const finalPrice = product.listPrice * (1 - product.discount / 100);
+  const finalPrice = product.list_price * (1 - product.discount / 100);
   const hasDiscount = product.discount > 0;
 
   return (
@@ -78,12 +78,12 @@ const StorefrontProductCard = ({ product, index, onViewMore }: StorefrontProduct
                   {formatPrice(finalPrice)}
                 </span>
                 <span className="text-sm text-muted-foreground line-through">
-                  {formatPrice(product.listPrice)}
+                  {formatPrice(product.list_price)}
                 </span>
               </div>
             ) : (
               <span className="text-xl font-bold text-foreground">
-                {formatPrice(product.listPrice)}
+                {formatPrice(product.list_price)}
               </span>
             )}
           </div>

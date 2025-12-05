@@ -13,26 +13,28 @@ import {
 } from '@/components/ui/dialog';
 import { 
   Category, 
-  CategoryFormData, 
-  initialCategories // Lista de todas as categorias para o Select ParentId
+  CategoryFormData 
 } from '@/types/category'; 
 // Remoção: useMemo e types de Hierarquia não são mais necessários
 
 interface CategoryFormProps {
   formData: CategoryFormData;
   setFormData: (data: CategoryFormData) => void;
+  selectedFile: File | null;
+  setSelectedFile: (file: File | null) => void;
+  // ----------------------------------------
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   isEditing: boolean;
-  // A lista de categorias existentes é necessária para o dropdown de "Categoria Pai"
   allCategories: Category[]; 
-  // Opcional: Se estiver editando, excluímos a categoria atual da lista de pais
-  currentCategoryId?: string; 
+  currentCategoryId?: string | number; 
 }
 
 const CategoryForm = ({ 
   formData, 
   setFormData, 
+  selectedFile,      // Recebe o arquivo
+  setSelectedFile,   // Função para setar o arquivo
   onSubmit, 
   onCancel, 
   isEditing, 
@@ -42,10 +44,9 @@ const CategoryForm = ({
 
   // Função auxiliar para converter o valor do Select (string) para string | null 
   // e vice-versa para o formData.parentId
-  const handleParentIdChange = (value: string) => {
-    // Se o valor for 'null' (opção de Categoria Principal), armazena como null
-    const newParentId = value === 'null' ? null : value;
-    setFormData({ ...formData, parentId: newParentId });
+  const handleparentIdChange = (value: string) => {
+    const newparentId = value === 'none' ? null : value;
+    setFormData({ ...formData, parentId: newparentId });
   };
   
   // Filtra as categorias para que a categoria em edição não seja selecionada como sua própria pai.
@@ -75,14 +76,30 @@ const CategoryForm = ({
           />
         </div>
 
+        {/* INPUT DE ARQUIVO (MODIFICADO) */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Nome do Arquivo da Imagem *</label>
+          <label htmlFor="image">Imagem da Categoria</label>
           <Input
-            value={formData.imageFilename}
-            onChange={(e) => setFormData({ ...formData, imageFilename: e.target.value })}
-            placeholder="Ex: guitarras_acusticas.jpg"
-            title="Apenas o nome do arquivo da imagem é armazenado."
+            id="image"
+            type="file"
+            accept="image/*"
+            className="cursor-pointer"
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                setSelectedFile(e.target.files[0]);
+              }
+            }}
           />
+          {/* Feedback do arquivo selecionado */}
+          {selectedFile ? (
+            <p className="text-sm text-green-600 font-medium">
+              Arquivo selecionado: {selectedFile.name}
+            </p>
+          ) : isEditing && formData.existingImageUrl ? (
+            <p className="text-xs text-muted-foreground">
+              Imagem atual: {formData.existingImageUrl} (Envie outra para substituir)
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-2">
@@ -90,7 +107,7 @@ const CategoryForm = ({
           <Select
             // O Select do Shadcn precisa de uma string, então convertemos null para 'null'
             value={formData.parentId === null ? 'null' : formData.parentId}
-            onValueChange={handleParentIdChange}
+            onValueChange={handleparentIdChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione a categoria superior" />
@@ -104,8 +121,8 @@ const CategoryForm = ({
               {availableParentCategories.map((cat) => (
                 <SelectItem 
                     key={cat.id} 
-                    value={cat.id} 
-                >
+                    value={cat.id.toString()}                
+                  >
                   {cat.name}
                 </SelectItem>
               ))}
@@ -124,9 +141,9 @@ const CategoryForm = ({
           <div className="flex items-center gap-2">
             <Checkbox
               id="isEnabled"
-              checked={formData.isEnabled}
+              checked={formData.enabled}
               onCheckedChange={(checked) => 
-                setFormData({ ...formData, isEnabled: checked as boolean })
+                setFormData({ ...formData, enabled: checked as boolean })
               }
             />
             <label htmlFor="isEnabled" className="text-sm font-medium text-foreground cursor-pointer">

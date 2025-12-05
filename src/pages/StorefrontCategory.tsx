@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Music, Home, ArrowLeft, Package } from 'lucide-react';
-import { initialCategories, getCategoryImageUrl, Category } from '@/types/category';
-import { initialProducts, Product } from '@/types/product';
+import { getCategoryImageUrl, Category } from '@/types/category';
+import { Product } from '@/types/product';
+import { getAllCategories } from '@/services/categoryService';
+import { getAllProducts } from '@/services/productService'; // Certifique-se de ter exportado isso
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,48 +31,127 @@ const ITEMS_PER_PAGE = 12;
 const StorefrontCategory = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  
+  // 1. Estados para armazenar dados reais
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get only enabled categories
+  // 2. Busca inicial de dados
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        // Busca categorias e produtos em paralelo
+        const [catsResponse, prodsResponse] = await Promise.all([
+            getAllCategories(),
+            getAllProducts()
+        ]);
+
+        console.log("DEBUG - Categorias vindas do Backend:", catsResponse);
+        console.log("DEBUG - Produtos vindos do Backend:", prodsResponse);
+
+        // Tratamento de Paginação para Categorias
+        let catsData: Category[] = [];
+        const catsResAny = catsResponse as any;
+        if (catsResAny.content && Array.isArray(catsResAny.content)) {
+            catsData = catsResAny.content;
+        } else if (Array.isArray(catsResponse)) {
+            catsData = catsResponse;
+        }
+
+        // Tratamento de Paginação para Produtos (caso seu backend pagine produtos também)
+        let prodsData: Product[] = [];
+        const prodsResAny = prodsResponse as any;
+        if (prodsResAny.content && Array.isArray(prodsResAny.content)) {
+            prodsData = prodsResAny.content;
+        } else if (Array.isArray(prodsResponse)) {
+            prodsData = prodsResponse;
+        }
+
+        setCategories(catsData);
+        setAllProducts(prodsData);
+
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        toast({
+            title: "Erro",
+            description: "Falha ao carregar a categoria.",
+            variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [toast]);
+
+  // 3. Filtra apenas categorias ativas
   const enabledCategories = useMemo(() => {
-    return initialCategories.filter(cat => cat.isEnabled);
-  }, []);
+    // Nota: Verifique se no seu tipo Category é 'enabled' ou 'isEnabled'
+    return categories.filter(cat => cat.enabled); 
+  }, [categories]);
 
-  // Get current category
+  // 4. Encontra a categoria atual baseada na URL
   const currentCategory = useMemo(() => {
-    return enabledCategories.find(cat => cat.id === categoryId);
+    // Compara convertendo para string, pois categoryId da URL é string
+    return enabledCategories.find(cat => String(cat.id) === categoryId);
   }, [categoryId, enabledCategories]);
 
-  // Build breadcrumb path
+  // 5. Constrói o Breadcrumb recursivamente
   const breadcrumbPath = useMemo(() => {
     const path: Category[] = [];
     let current = currentCategory;
     
-    while (current) {
+    // Proteção contra loops infinitos (max 10 níveis)
+    let depth = 0;
+    while (current && depth < 10) {
       path.unshift(current);
       current = enabledCategories.find(cat => cat.id === current?.parentId);
+      depth++;
     }
     
     return path;
   }, [currentCategory, enabledCategories]);
 
-  // Get enabled products for this category
+  // 6. Filtra os produtos desta categoria
   const categoryProducts = useMemo(() => {
-    // For demo, we'll filter by category name matching
-    // In a real app, this would use proper category ID matching
-    return initialProducts
-      .filter(product => product.isEnabled)
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
+    if (!currentCategory) return [];
 
-  // Pagination
+    return allProducts
+      .filter(product => 
+        // Filtra pelo ID da categoria (convertendo para string para garantir)
+        String(product.categoryId) === String(currentCategory.id) && 
+        product.isEnabled // Verifica se o produto está ativo
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allProducts, currentCategory]);
+
+  // Pagination Logic
   const totalPages = Math.ceil(categoryProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = categoryProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Loading State
+  if (isLoading) {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Carregando produtos...</p>
+            </div>
+        </div>
+    );
+  }
+
+  // Not Found State
   if (!currentCategory) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -133,7 +215,8 @@ const StorefrontCategory = () => {
                   <BreadcrumbPage>{cat.name}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink 
-                    onClick={() => navigate('/store')}
+                    // Se for pai, poderíamos navegar para ele. Por enquanto volta pra store ou implementamos lógica de navegação
+                    onClick={() => navigate(`/store/category/${cat.id}`)}
                     className="cursor-pointer hover:text-primary transition-colors"
                   >
                     {cat.name}
@@ -149,7 +232,7 @@ const StorefrontCategory = () => {
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 rounded-xl overflow-hidden bg-secondary/50">
               <img
-                src={getCategoryImageUrl(currentCategory.imageFilename)}
+                src={getCategoryImageUrl(currentCategory.image)}
                 alt={currentCategory.name}
                 className="w-full h-full object-cover"
               />

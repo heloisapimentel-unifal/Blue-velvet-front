@@ -43,7 +43,7 @@ const CategoryDetailModal = ({ category, allCategories, open, onClose }: Categor
           <div className="flex gap-6">
             <div className="w-24 h-24 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden border border-border">
               <img 
-                src={getCategoryImageUrl(category.imageFilename)}
+                src={getCategoryImageUrl(category.image)}
                 alt={category.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -53,9 +53,9 @@ const CategoryDetailModal = ({ category, allCategories, open, onClose }: Categor
               />
             </div>
             <div className="flex-1 space-y-3">
-              <Badge variant={category.isEnabled ? 'default' : 'secondary'}>
-                {category.isEnabled ? <Check className="w-3 h-3 mr-1" /> : <X className="w-3 h-3 mr-1" />}
-                {category.isEnabled ? 'Ativa' : 'Inativa'}
+              <Badge variant={category.enabled ? 'default' : 'secondary'}>
+                {category.enabled ? <Check className="w-3 h-3 mr-1" /> : <X className="w-3 h-3 mr-1" />}
+                {category.enabled ? 'Ativa' : 'Inativa'}
               </Badge>
               <div>
                 <p className="text-sm text-muted-foreground">ID</p>
@@ -92,16 +92,6 @@ const CategoryDetailModal = ({ category, allCategories, open, onClose }: Categor
             </div>
           </div>
 
-          {/* Image Filename */}
-          {category.imageFilename && (
-            <>
-              <Separator />
-              <div>
-                <p className="text-sm text-muted-foreground">Arquivo de Imagem</p>
-                <p className="font-mono text-sm">{category.imageFilename}</p>
-              </div>
-            </>
-          )}
         </div>
       </DialogContent>
     </Dialog>

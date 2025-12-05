@@ -25,7 +25,7 @@ const StorefrontProductModal = ({ product, open, onClose }: StorefrontProductMod
     }).format(price);
   };
 
-  const finalPrice = product.listPrice * (1 - product.discount / 100);
+  const finalPrice = product.list_price * (1 - product.discount / 100);
   const hasDiscount = product.discount > 0;
 
   return (
@@ -91,12 +91,12 @@ const StorefrontProductModal = ({ product, open, onClose }: StorefrontProductMod
                     {formatPrice(finalPrice)}
                   </span>
                   <span className="text-lg text-muted-foreground line-through">
-                    {formatPrice(product.listPrice)}
+                    {formatPrice(product.list_price)}
                   </span>
                 </div>
               ) : (
                 <span className="text-3xl font-bold text-foreground">
-                  {formatPrice(product.listPrice)}
+                  {formatPrice(product.list_price)}
                 </span>
               )}
             </div>
@@ -120,19 +120,19 @@ const StorefrontProductModal = ({ product, open, onClose }: StorefrontProductMod
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg bg-secondary/50">
                   <span className="text-xs text-muted-foreground">Peso</span>
-                  <p className="font-medium text-foreground">{product.dimensions.weight} kg</p>
+                  <p className="font-medium text-foreground">{product.dimension.weight} kg</p>
                 </div>
                 <div className="p-3 rounded-lg bg-secondary/50">
                   <span className="text-xs text-muted-foreground">Largura</span>
-                  <p className="font-medium text-foreground">{product.dimensions.width} cm</p>
+                  <p className="font-medium text-foreground">{product.dimension.width} cm</p>
                 </div>
                 <div className="p-3 rounded-lg bg-secondary/50">
                   <span className="text-xs text-muted-foreground">Altura</span>
-                  <p className="font-medium text-foreground">{product.dimensions.height} cm</p>
+                  <p className="font-medium text-foreground">{product.dimension.height} cm</p>
                 </div>
                 <div className="p-3 rounded-lg bg-secondary/50">
                   <span className="text-xs text-muted-foreground">Comprimento</span>
-                  <p className="font-medium text-foreground">{product.dimensions.length} cm</p>
+                  <p className="font-medium text-foreground">{product.dimension.length} cm</p>
                 </div>
               </div>
             </div>
