@@ -15,7 +15,8 @@ import {
   Search,
   ArrowLeft,
   Tag, 
-  Guitar, 
+  Guitar,
+  Download,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -95,6 +96,59 @@ const Categories = () => {
     navigate('/login');
   };
 
+  // Função para exportar CSV
+  const handleExportCSV = () => {
+    if (!categoriesList || categoriesList.length === 0) {
+      toast({
+        title: 'Nenhum dado',
+        description: 'Não há categorias para exportar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Encontra o nome da categoria pai
+    const getParentName = (parentId: string | null) => {
+      if (!parentId) return '';
+      const parent = categoriesList.find(c => String(c.id) === String(parentId));
+      return parent?.name || '';
+    };
+
+    // Cabeçalho do CSV
+    const headers = ['ID', 'Nome', 'Categoria Pai', 'Status', 'Imagem'];
+    
+    // Linhas de dados
+    const rows = categoriesList.map(cat => [
+      cat.id,
+      `"${cat.name.replace(/"/g, '""')}"`, // Escapa aspas duplas
+      `"${getParentName(cat.parentId)}"`,
+      cat.enabled ? 'Ativa' : 'Inativa',
+      cat.image || ''
+    ]);
+
+    // Monta o conteúdo CSV
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Cria e baixa o arquivo
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `categorias_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: 'CSV exportado',
+      description: `${categoriesList.length} categorias exportadas com sucesso.`,
+    });
+  };
+
   if (!user) {
     navigate('/login');
     return null;
@@ -151,38 +205,46 @@ const Categories = () => {
 
       if (editingCategory) {
         // UPDATE
-        const updatedCategory = await updateCategory(editingCategory.id, payload, selectedFile);
+        await updateCategory(editingCategory.id, payload, selectedFile);
         
-        setCategoriesList(categoriesList.map((c) =>
-          c.id === editingCategory.id ? updatedCategory : c
-        ));
-
         toast({
           title: 'Categoria atualizada',
-          description: `"${updatedCategory.name}" foi atualizada com sucesso.`,
+          description: `"${formData.name}" foi atualizada com sucesso.`,
         });
 
       } else {
         // CREATE
-        const newCategory = await createCategory(payload, selectedFile);
-        
-        setCategoriesList([...categoriesList, newCategory]);
+        await createCategory(payload, selectedFile);
         
         toast({
           title: 'Categoria criada',
-          description: `"${newCategory.name}" foi adicionada com sucesso.`,
+          description: `"${formData.name}" foi adicionada com sucesso.`,
         });
       }
 
       setIsDialogOpen(false);
       setFormData(emptyCategoryFormData);
       setSelectedFile(null);
+      
+      // Recarrega a lista após qualquer mudança
+      await fetchData();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      
+      // Verifica se é erro de duplicata
+      const errorMessage = error?.message?.toLowerCase() || '';
+      const isDuplicateError = errorMessage.includes('duplicate') || 
+                               errorMessage.includes('duplicat') ||
+                               errorMessage.includes('já existe') ||
+                               errorMessage.includes('already exists') ||
+                               errorMessage.includes('unique constraint');
+      
       toast({
-        title: 'Erro ao salvar',
-        description: error instanceof Error ? error.message : 'Falha na comunicação com o servidor.',
+        title: isDuplicateError ? 'Nome duplicado' : 'Erro ao salvar',
+        description: isDuplicateError 
+          ? `Já existe uma categoria com o nome "${formData.name}". Por favor, escolha outro nome.`
+          : (error instanceof Error ? error.message : 'Falha na comunicação com o servidor.'),
         variant: 'destructive',
       });
     } finally {
@@ -208,13 +270,14 @@ const Categories = () => {
       try {
         setIsLoading(true);
         await deleteCategory(categoryToDelete.id);
-
-        setCategoriesList(categoriesList.filter((c) => c.id !== categoryToDelete.id));
         
         toast({
           title: 'Categoria excluída',
           description: `"${categoryToDelete.name}" foi removida.`,
         });
+        
+        // Recarrega a lista após exclusão
+        await fetchData();
       } catch (error) {
         console.error(error);
         toast({
@@ -271,6 +334,10 @@ const Categories = () => {
           </div>
           
           <div className="flex gap-3 w-full sm:w-auto justify-end">
+            <Button variant="outline" onClick={handleExportCSV} title="Exportar CSV">
+              <Download className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Exportar CSV</span>
+            </Button>
             <Button variant="outline" asChild>
                 <Link to="/products">
                     <Guitar className="w-4 h-4 mr-2" />
