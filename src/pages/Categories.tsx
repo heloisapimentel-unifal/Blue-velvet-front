@@ -17,23 +17,30 @@ import {
   Tag, 
   Guitar,
   Download,
+  RotateCcw, // Ícone
 } from 'lucide-react';
+
 import { useToast } from '@/hooks/use-toast';
 import { 
   Category, 
   CategoryFormData
 } from '@/types/category'; 
 
-import { getAllCategories, createCategory, updateCategory, deleteCategory } from '@/services/categoryService';
+import { 
+  getAllCategories, 
+  createCategory, 
+  updateCategory, 
+  deleteCategory,
+  resetDatabase // RESSETANDO O BD 
+} from '@/services/categoryService';
 
 import CategoryForm from '@/components/categories/CategoryForm'; 
 import CategoryTable from '@/components/categories/CategoryTable'; 
 
-// 1. CORREÇÃO: Usar nomes que batem com o Backend (camelCase e 'image')
 const emptyCategoryFormData: CategoryFormData = {
   name: '',
-  existingImageUrl: '',      // Mudado de image_url para image
-  parentId: null, // Mudado de parent_id para parentId
+  existingImageUrl: '',
+  parentId: null,
   enabled: true,
 };
 
@@ -57,19 +64,22 @@ const Categories = () => {
     fetchData();
   }, []);
 
+  // --- FUNÇÃO VAZIA (SÓ PARA O BOTÃO FUNCIONAR) --- EM SERVICES TEMOS resetDatabase COM AVISO E CONFIRMAÇÃO
+  const handleReset = () => {
+     // Lógica do backend entra aqui depois
+  };
+  // ------------------------------------------------
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
       const response: any = await getAllCategories(); 
       
-      // 2. CORREÇÃO: Tratamento robusto da Paginação do Spring Boot
       let data: Category[] = [];
 
       if (response.content && Array.isArray(response.content)) {
-        // Cenário: Paginação { content: [...], pageable: ... }
         data = response.content;
       } else if (Array.isArray(response)) {
-        // Cenário: Lista simples [...]
         data = response;
       } else {
         console.warn("Formato inesperado:", response);
@@ -96,10 +106,6 @@ const Categories = () => {
     navigate('/login');
   };
 
-  // Função para exportar CSV conforme especificação:
-  // - Apenas dois campos: id e name
-  // - Nome do arquivo: categories_YYYY-MM-DD_HH-mm-ss.csv
-  // - Hierarquia: substituir "--" por "  " (2 espaços)
   const handleExportCSV = () => {
     if (!categoriesList || categoriesList.length === 0) {
       toast({
@@ -110,17 +116,14 @@ const Categories = () => {
       return;
     }
 
-    // Função recursiva para processar hierarquia
     const processHierarchy = (categories: Category[], level = 0): Array<{ id: string | number; name: string }> => {
       const result: Array<{ id: string | number; name: string }> = [];
       const roots = categories.filter(c => !c.parentId);
       
       const processNode = (cat: Category, depth: number) => {
-        // Adiciona espaços para indicar hierarquia (2 espaços por nível)
         const indent = '  '.repeat(depth);
         result.push({ id: cat.id, name: `${indent}${cat.name}` });
         
-        // Processa filhos
         const children = categories.filter(c => String(c.parentId) === String(cat.id));
         children.sort((a, b) => a.name.localeCompare(b.name));
         children.forEach(child => processNode(child, depth + 1));
@@ -134,28 +137,23 @@ const Categories = () => {
 
     const hierarchicalData = processHierarchy(categoriesList);
 
-    // Cabeçalho do CSV (apenas id e name)
     const headers = ['id', 'name'];
     
-    // Linhas de dados
     const rows = hierarchicalData.map(item => [
       item.id,
-      `"${item.name.replace(/"/g, '""')}"` // Escapa aspas duplas
+      `"${item.name.replace(/"/g, '""')}"`
     ]);
 
-    // Monta o conteúdo CSV
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
 
-    // Gera nome do arquivo com padrão: categories_YYYY-MM-DD_HH-mm-ss.csv
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
     const fileName = `categories_${dateStr}_${timeStr}.csv`;
 
-    // Cria e baixa o arquivo
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -186,14 +184,13 @@ const Categories = () => {
 
   const openEditDialog = (category: Category) => {
     setEditingCategory(category);
-    // 3. CORREÇÃO: Mapear os campos corretos vindo do objeto Category
     setFormData({
-    name: category.name,
-    parentId: category.parentId,
-    enabled: category.enabled,
-    existingImageUrl: category.image,
-    newImageFile: null,
-  });
+      name: category.name,
+      parentId: category.parentId,
+      enabled: category.enabled,
+      existingImageUrl: category.image,
+      newImageFile: null,
+    });
     setSelectedFile(null);
     setIsDialogOpen(true);
   };
@@ -218,16 +215,13 @@ const Categories = () => {
     try {
       setIsLoading(true);
 
-      // 4. CORREÇÃO: Payload com chaves em camelCase para o Java aceitar
       const payload = {
         name: formData.name,
-        parentId: formData.parentId, // Envia 'parentId', não 'parent_id'
+        parentId: formData.parentId,
         enabled: formData.enabled,
-        // image: Não enviamos string aqui se for upload, o backend gerencia
       };
 
       if (editingCategory) {
-        // UPDATE
         await updateCategory(editingCategory.id, payload, selectedFile);
         
         toast({
@@ -236,7 +230,6 @@ const Categories = () => {
         });
 
       } else {
-        // CREATE
         await createCategory(payload, selectedFile);
         
         toast({
@@ -249,13 +242,11 @@ const Categories = () => {
       setFormData(emptyCategoryFormData);
       setSelectedFile(null);
       
-      // Recarrega a lista após qualquer mudança
       await fetchData();
 
     } catch (error: any) {
       console.error(error);
       
-      // Verifica se é erro de duplicata
       const errorMessage = error?.message?.toLowerCase() || '';
       const isDuplicateError = errorMessage.includes('duplicate') || 
                                errorMessage.includes('duplicat') ||
@@ -277,7 +268,6 @@ const Categories = () => {
 
   const handleDelete = async () => {
     if (categoryToDelete) {
-      // 5. CORREÇÃO: Validar usando parentId (camelCase)
       const hasChildren = categoriesList.some(c => c.parentId === categoryToDelete.id);
 
       if (hasChildren) {
@@ -299,7 +289,6 @@ const Categories = () => {
           description: `"${categoryToDelete.name}" foi removida.`,
         });
         
-        // Recarrega a lista após exclusão
         await fetchData();
       } catch (error) {
         console.error(error);
@@ -357,19 +346,27 @@ const Categories = () => {
           </div>
           
           <div className="flex gap-3 w-full sm:w-auto justify-end">
-            <Button variant="outline" onClick={handleExportCSV} title="Exportar CSV">
-              <Download className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Exportar CSV</span>
+            
+            {/* Botão de Reset com função vazia */}
+            <Button variant="outline" size="icon" onClick={handleReset} title="Resetar filtros">
+                <RotateCcw className="w-4 h-4" />
             </Button>
+
+            <Button variant="outline" onClick={handleExportCSV} title="Exportar CSV">
+                <Download className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Exportar CSV</span>
+            </Button>
+
             <Button variant="outline" asChild>
                 <Link to="/products">
                     <Guitar className="w-4 h-4 mr-2" />
                     Produtos
                 </Link>
             </Button>
+
             <Button onClick={openCreateDialog}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Categoria
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Categoria
             </Button>
           </div>
         </div>
@@ -392,7 +389,6 @@ const Categories = () => {
         {/* Stats */}
         <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <span>{categoriesList?.length || 0} categoria(s)</span>
-          {/* Verifica se é array antes do filter para evitar erro */}
           <span>Ativas: {Array.isArray(categoriesList) ? categoriesList.filter(c => c.enabled).length : 0}</span>
         </div>
       </main>
@@ -413,7 +409,7 @@ const Categories = () => {
             onSubmit={handleSubmit}
             onCancel={() => setIsDialogOpen(false)}
             isEditing={!!editingCategory}
-            allCategories={categoriesList || []} // Garante array
+            allCategories={categoriesList || []} 
             currentCategoryId={editingCategory?.id}
           />
         </DialogContent>

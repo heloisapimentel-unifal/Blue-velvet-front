@@ -69,7 +69,6 @@ export const updateCategory = async (id: string | number, categoryData: any, ima
     method: 'PUT',
     headers: {
       ...getAuthHeaders(),
-      // Novamente: NÃO defina Content-Type manualmente
     },
     body: formData,
   });
@@ -87,9 +86,28 @@ export const updateCategory = async (id: string | number, categoryData: any, ima
 export const deleteCategory = async (id: string | number): Promise<void> => {
   const response = await fetch(`${API_URL}/${id}`, {
     method: 'DELETE',
+    headers: {
+      ...getAuthHeaders(),
+    }
   });
 
   if (!response.ok) {
     throw new Error("Erro ao excluir categoria");
+  }
+};
+
+// --- RESET DATABASE (NOVO) ---
+export const resetDatabase = async (): Promise<void> => {
+  // ATENÇÃO: Verifique se o seu backend usa o endpoint "/reset" e o método POST
+  const response = await fetch(`${API_URL}/reset`, {
+    method: 'POST', 
+    headers: {
+      ...getAuthHeaders(),
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Erro ao resetar o banco de dados");
   }
 };
