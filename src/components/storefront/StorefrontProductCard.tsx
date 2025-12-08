@@ -23,12 +23,12 @@ const StorefrontProductCard = ({ product, index, onViewMore }: StorefrontProduct
   return (
     <div
       className="group animate-fade-in"
-      style={{ animationDelay: `${index * 0.05}s` }}
+      style={{ animationDelay: `${index * 0.03}s` }}
     >
-      <div className="relative overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 flex flex-col h-full">
+      <div className="relative overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 flex flex-col h-full">
         {/* Discount Badge */}
         {hasDiscount && (
-          <Badge className="absolute top-3 right-3 z-10 bg-destructive text-destructive-foreground">
+          <Badge className="absolute top-2 right-2 z-10 bg-destructive text-destructive-foreground text-xs">
             -{product.discount}%
           </Badge>
         )}
@@ -37,52 +37,57 @@ const StorefrontProductCard = ({ product, index, onViewMore }: StorefrontProduct
         {!product.inStock && (
           <Badge 
             variant="secondary" 
-            className="absolute top-3 left-3 z-10 bg-muted text-muted-foreground"
+            className="absolute top-2 left-2 z-10 bg-muted text-muted-foreground text-xs"
           >
             Indisponível
           </Badge>
         )}
 
-        {/* Image */}
-        <div className="aspect-square overflow-hidden bg-secondary/50">
+        {/* Image - menor */}
+        <div className="aspect-[4/3] overflow-hidden bg-secondary/50">
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Package className="w-16 h-16 text-muted-foreground/30" />
+              <Package className="w-12 h-12 text-muted-foreground/30" />
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-4 flex flex-col flex-1">
+        <div className="p-3 flex flex-col flex-1">
           {/* Brand */}
-          <span className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
+          <span className="text-xs font-medium text-primary uppercase tracking-wider mb-0.5">
             {product.brand}
           </span>
 
           {/* Name */}
-          <h3 className="font-semibold text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+          <h3 className="font-semibold text-sm text-foreground line-clamp-2 mb-1 group-hover:text-primary transition-colors">
             {product.name}
           </h3>
 
+          {/* Short Description */}
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-1">
+            {product.shortDescription}
+          </p>
+
           {/* Price */}
-          <div className="mt-auto">
+          <div className="mt-auto mb-2">
             {hasDiscount ? (
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-primary">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-lg font-bold text-primary">
                   {formatPrice(finalPrice)}
                 </span>
-                <span className="text-sm text-muted-foreground line-through">
+                <span className="text-xs text-muted-foreground line-through">
                   {formatPrice(product.list_price)}
                 </span>
               </div>
             ) : (
-              <span className="text-xl font-bold text-foreground">
+              <span className="text-lg font-bold text-foreground">
                 {formatPrice(product.list_price)}
               </span>
             )}
@@ -92,7 +97,8 @@ const StorefrontProductCard = ({ product, index, onViewMore }: StorefrontProduct
           <Button
             onClick={onViewMore}
             variant="outline"
-            className="w-full mt-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors"
+            size="sm"
+            className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors"
           >
             Ver Detalhes
           </Button>
