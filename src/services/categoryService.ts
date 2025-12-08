@@ -96,13 +96,17 @@ export const deleteCategory = async (id: string | number): Promise<void> => {
   }
 };
 
-// --- RESET DATABASE (NOVO) ---
+// --- RESET DATABASE (CORRIGIDO) ---
 export const resetDatabase = async (): Promise<void> => {
-  // ATENÇÃO: Verifique se o seu backend usa o endpoint "/reset" e o método POST
-  const response = await fetch(`${API_URL}/reset`, {
+  // ATENÇÃO: A URL mudou. Não usamos mais a const API_URL aqui 
+  // porque o reset está no AdminController, não no CategoryController.
+  const ADMIN_URL = "http://localhost:8080/api/admin/reset-database"; 
+  
+  const response = await fetch(ADMIN_URL, {
     method: 'POST', 
     headers: {
       ...getAuthHeaders(),
+      'Content-Type': 'application/json'
     }
   });
 

@@ -6,6 +6,7 @@ import { Product } from '@/types/product';
 import { getAllCategories } from '@/services/categoryService';
 import { getAllProducts } from '@/services/productService';
 import { useToast } from '@/hooks/use-toast';
+import LoadingScreen from '@/components/ui/loadingScreen'; // Adicione o import
 import {
   Pagination,
   PaginationContent,
@@ -107,14 +108,7 @@ const Storefront = () => {
 
   // TELA DE CARREGAMENTO
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Carregando loja...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

@@ -7,6 +7,7 @@ import { getAllCategories } from '@/services/categoryService';
 import { getAllProducts } from '@/services/productService';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import LoadingScreen from '@/components/ui/loadingScreen'; // Adicione o import
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -161,14 +162,7 @@ const StorefrontCategory = () => {
 
   // Loading State
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Carregando produtos...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // Not Found State

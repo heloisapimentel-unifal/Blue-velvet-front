@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import LoadingScreen from '@/components/ui/loadingScreen';
 
 const Index = () => {
   const { user, isLoading } = useAuth();
@@ -17,11 +17,7 @@ const Index = () => {
     }
   }, [user, isLoading, navigate]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="w-8 h-8 text-primary animate-spin" />
-    </div>
-  );
+  return <LoadingScreen />;
 };
 
 export default Index;

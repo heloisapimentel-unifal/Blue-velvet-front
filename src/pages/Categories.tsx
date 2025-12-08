@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import LoadingScreen from '@/components/ui/loadingScreen';
 import {
   Dialog,
   DialogContent,
@@ -64,10 +65,44 @@ const Categories = () => {
     fetchData();
   }, []);
 
-  // --- FUNÇÃO VAZIA (SÓ PARA O BOTÃO FUNCIONAR) --- EM SERVICES TEMOS resetDatabase COM AVISO E CONFIRMAÇÃO
-  const handleReset = () => {
-     // Lógica do backend entra aqui depois
+ // --- FUNÇÃO DE RESET IMPLEMENTADA ---
+  const handleReset = async () => {
+     // 1. Confirmação de segurança (imprescindível)
+     const confirm = window.confirm(
+       "⚠️ PERIGO: Tem certeza? \n\nIsso apagará TODOS os produtos e categorias atuais e restaurará os dados iniciais do sistema. \n\nEssa ação não pode ser desfeita."
+     );
+
+     if (!confirm) return;
+
+     try {
+       setIsLoading(true);
+       
+       // 2. Chama o serviço
+       await resetDatabase();
+
+       // 3. Feedback de sucesso
+       toast({
+         title: "Sistema Resetado",
+         description: "O banco de dados voltou ao estado original.",
+         className: "bg-green-600 text-white" // Opcional: deixar verdinho
+       });
+
+       // 4. Recarrega a tabela para mostrar os dados novos
+       await fetchData();
+
+     } catch (error: any) {
+       console.error(error);
+       toast({
+         title: "Erro ao resetar",
+         description: error.message || "Não foi possível resetar o banco.",
+         variant: "destructive"
+       });
+     } finally {
+       setIsLoading(false);
+     }
   };
+
+
   // ------------------------------------------------
 
   const fetchData = async () => {
@@ -304,6 +339,10 @@ const Categories = () => {
       }
     }
   };
+
+  if (isLoading && categoriesList.length === 0) {
+      return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

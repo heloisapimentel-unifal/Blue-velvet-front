@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import LoadingScreen from '@/components/ui/loadingScreen';
 import {
   Dialog,
   DialogContent,
@@ -284,6 +285,10 @@ const Products = () => {
       }
     }
   };
+
+  if (isLoading && products.length === 0) {
+      return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
