@@ -1,17 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, ChevronRight, Home, Loader2 } from 'lucide-react'; // Adicionei Loader2
+import { Music, ChevronRight, Loader2, Package } from 'lucide-react';
 import { getCategoryImageUrl, Category } from '@/types/category';
+import { Product } from '@/types/product';
 import { getAllCategories } from '@/services/categoryService';
+import { getAllProducts } from '@/services/productService';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import {
   Pagination,
   PaginationContent,
@@ -20,6 +14,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import StorefrontProductCard from '@/components/storefront/StorefrontProductCard';
+import StorefrontProductModal from '@/components/storefront/StorefrontProductModal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,33 +24,47 @@ const Storefront = () => {
   const { toast } = useToast();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedParentId, setSelectedParentId] = useState<string | number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Estado para os dados
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Busca de dados ao carregar
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response: any = await getAllCategories();
+        const [catsResponse, prodsResponse] = await Promise.all([
+          getAllCategories(),
+          getAllProducts()
+        ]);
 
         // Tratamento para paginação do Spring Boot (content) ou Array direto
-        let data: Category[] = [];
-        if (response.content && Array.isArray(response.content)) {
-          data = response.content;
-        } else if (Array.isArray(response)) {
-          data = response;
+        let catsData: Category[] = [];
+        const catsResAny = catsResponse as any;
+        if (catsResAny.content && Array.isArray(catsResAny.content)) {
+          catsData = catsResAny.content;
+        } else if (Array.isArray(catsResponse)) {
+          catsData = catsResponse;
         }
 
-        setCategories(data);
+        let prodsData: Product[] = [];
+        const prodsResAny = prodsResponse as any;
+        if (prodsResAny.content && Array.isArray(prodsResAny.content)) {
+          prodsData = prodsResAny.content;
+        } else if (Array.isArray(prodsResponse)) {
+          prodsData = prodsResponse;
+        }
+
+        setCategories(catsData);
+        setAllProducts(prodsData);
       } catch (error) {
         console.error("Erro ao carregar vitrine:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar as categorias.",
+          description: "Não foi possível carregar os dados.",
           variant: "destructive"
         });
       } finally {
@@ -62,80 +72,40 @@ const Storefront = () => {
       }
     };
 
-    fetchCategories();
+    fetchData();
   }, [toast]);
 
   // Filtra apenas categorias habilitadas
   const enabledCategories = useMemo(() => {
-    return categories.filter(cat => cat.enabled); // Certifique-se que o backend retorna 'enabled'
+    return categories.filter(cat => cat.enabled);
   }, [categories]);
 
-  // Categoria atual para o breadcrumb
-  const currentCategory = useMemo(() => {
-    if (!selectedParentId) return null;
-    return enabledCategories.find(cat => cat.id === selectedParentId);
-  }, [selectedParentId, enabledCategories]);
-
-  // Constrói o caminho do breadcrumb
-  const breadcrumbPath = useMemo(() => {
-    const path: Category[] = [];
-    let current = currentCategory;
-
-    // Proteção contra loop infinito e verificação de tipos
-    let safetyCounter = 0;
-    while (current && safetyCounter < 10) {
-      path.unshift(current);
-      // Busca o pai baseada no parentId
-      current = enabledCategories.find(cat => cat.id === current?.parentId);
-      safetyCounter++;
-    }
-
-    return path;
-  }, [currentCategory, enabledCategories]);
-
-  // Categorias para mostrar na tela (Filhas da selecionada ou Raiz)
-  const displayedCategories = useMemo(() => {
+  // Apenas categorias pai (sem parentId)
+  const parentCategories = useMemo(() => {
     return enabledCategories
-      .filter(cat => {
-        // Se selectedParentId for null, pega quem não tem parentId (raiz)
-        // Se tiver ID, pega quem tem esse ID como parentId
-        if (selectedParentId === null) {
-          return !cat.parentId;
-        }
-        return cat.parentId === selectedParentId;
-      })
+      .filter(cat => !cat.parentId)
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [enabledCategories, selectedParentId]);
+  }, [enabledCategories]);
 
-  // Lógica de Paginação
-  const totalPages = Math.ceil(displayedCategories.length / ITEMS_PER_PAGE);
-  const paginatedCategories = displayedCategories.slice(
+  // Todos os produtos habilitados
+  const enabledProducts = useMemo(() => {
+    return allProducts
+      .filter(product => product.isEnabled)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allProducts]);
+
+  // Paginação dos produtos
+  const totalPages = Math.ceil(enabledProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = enabledProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
   const handleCategoryClick = (category: Category) => {
-    // Verifica se a categoria tem filhas
-    const hasChildren = enabledCategories.some(cat =>
-      cat.parentId && String(cat.parentId) === String(category.id)
-    );
-
-    if (hasChildren) {
-      // Se tem filhas, entra nela (navegação interna)
-      setSelectedParentId(category.id);
-      setCurrentPage(1);
-    } else {
-      // Se não tem filhas, vai para a página de produtos dessa categoria
-      navigate(`/store/category/${category.id}`);
-    }
+    navigate(`/store/category/${category.id}`);
   };
 
-  const handleBreadcrumbClick = (categoryId: string | number | null) => {
-    setSelectedParentId(categoryId);
-    setCurrentPage(1);
-  };
-
-  // TELA DE CARREGAMENTO (Evita tela branca)
+  // TELA DE CARREGAMENTO
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -148,7 +118,7 @@ const Storefront = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
@@ -165,136 +135,110 @@ const Storefront = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        {/* Breadcrumb */}
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink
-                onClick={() => handleBreadcrumbClick(null)}
-                className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                Home
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            {breadcrumbPath.map((cat, index) => (
-              <BreadcrumbItem key={cat.id}>
-                <BreadcrumbSeparator />
-                {index === breadcrumbPath.length - 1 ? (
-                  <BreadcrumbPage>{cat.name}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink
-                    onClick={() => handleBreadcrumbClick(cat.id)}
-                    className="cursor-pointer hover:text-primary transition-colors"
-                  >
-                    {cat.name}
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        {/* Title */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {currentCategory ? currentCategory.name : 'Categorias'}
-          </h1>
-          <p className="text-muted-foreground">
-            {currentCategory
-              ? `Explore as subcategorias de ${currentCategory.name}`
-              : 'Explore nosso catálogo de instrumentos e acessórios musicais'}
-          </p>
-        </div>
-
-        {/* Categories Grid */}
-        {paginatedCategories.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {paginatedCategories.map((category, index) => {
-                const hasChildren = enabledCategories.some(cat =>
-                  cat.parentId && String(cat.parentId) === String(category.id)
-                );
-                return (
-                  <div
-                    key={category.id}
-                    onClick={() => handleCategoryClick(category)}
-                    className="group cursor-pointer animate-fade-in"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <div className="relative overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1">
-                      <div className="aspect-square overflow-hidden bg-secondary/50">
-                        {/* Verifique se getCategoryImageUrl trata URL nula */}
-                        <img
-                          src={getCategoryImageUrl(category.image)}
-                          alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          onError={(e) => {
-                            // Fallback caso a imagem quebre
-                            (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=No+Image';
-                          }}
-                        />
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {category.name}
-                          </h3>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {hasChildren ? 'Ver subcategorias' : 'Ver produtos'}
-                        </p>
-                      </div>
+      <main className="container mx-auto px-6 py-8 flex-1">
+        {/* Categorias Pai - Blocos menores */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Categorias</h2>
+          {parentCategories.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {parentCategories.map((category) => (
+                <div
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category)}
+                  className="group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-secondary/50 flex-shrink-0">
+                      <img
+                        src={getCategoryImageUrl(category.image)}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/category-placeholder.png';
+                        }}
+                      />
                     </div>
+                    <span className="font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
+                      {category.name}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">Nenhuma categoria disponível.</p>
+          )}
+        </section>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-16">
-            <Music className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              {selectedParentId
-                ? "Nenhuma subcategoria encontrada."
-                : "Nenhuma categoria disponível na loja."}
-            </p>
+        {/* Todos os Produtos */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-foreground">Todos os Produtos</h2>
+            <span className="text-sm text-muted-foreground">
+              {enabledProducts.length} produto{enabledProducts.length !== 1 ? 's' : ''}
+            </span>
           </div>
-        )}
+
+          {paginatedProducts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mb-8">
+                {paginatedProducts.map((product, index) => (
+                  <StorefrontProductCard
+                    key={product.id}
+                    product={product}
+                    index={index}
+                    onViewMore={() => setSelectedProduct(product)}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-16">
+              <Package className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhum produto disponível na loja.</p>
+            </div>
+          )}
+        </section>
       </main>
+
+      {/* Product Detail Modal */}
+      <StorefrontProductModal
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
 
       {/* Footer */}
       <footer className="border-t border-border bg-card/50 mt-auto">
