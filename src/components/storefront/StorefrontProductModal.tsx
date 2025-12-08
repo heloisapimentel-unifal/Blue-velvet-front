@@ -112,30 +112,32 @@ const StorefrontProductModal = ({ product, open, onClose }: StorefrontProductMod
             </div>
 
             {/* Dimensions */}
-            <div className="mb-6">
-              <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Ruler className="w-4 h-4" />
-                Dimensões
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-secondary/50">
-                  <span className="text-xs text-muted-foreground">Peso</span>
-                  <p className="font-medium text-foreground">{product.dimension.weight} kg</p>
-                </div>
-                <div className="p-3 rounded-lg bg-secondary/50">
-                  <span className="text-xs text-muted-foreground">Largura</span>
-                  <p className="font-medium text-foreground">{product.dimension.width} cm</p>
-                </div>
-                <div className="p-3 rounded-lg bg-secondary/50">
-                  <span className="text-xs text-muted-foreground">Altura</span>
-                  <p className="font-medium text-foreground">{product.dimension.height} cm</p>
-                </div>
-                <div className="p-3 rounded-lg bg-secondary/50">
-                  <span className="text-xs text-muted-foreground">Comprimento</span>
-                  <p className="font-medium text-foreground">{product.dimension.length} cm</p>
+            {product.dimension && (
+              <div className="mb-6">
+                <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Ruler className="w-4 h-4" />
+                  Dimensões
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-secondary/50">
+                    <span className="text-xs text-muted-foreground">Peso</span>
+                    <p className="font-medium text-foreground">{product.dimension.weight} kg</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/50">
+                    <span className="text-xs text-muted-foreground">Largura</span>
+                    <p className="font-medium text-foreground">{product.dimension.width} cm</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/50">
+                    <span className="text-xs text-muted-foreground">Altura</span>
+                    <p className="font-medium text-foreground">{product.dimension.height} cm</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/50">
+                    <span className="text-xs text-muted-foreground">Comprimento</span>
+                    <p className="font-medium text-foreground">{product.dimension.length} cm</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Additional Details */}
             {product.details && product.details.length > 0 && (
