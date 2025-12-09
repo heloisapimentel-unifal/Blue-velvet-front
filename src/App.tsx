@@ -13,6 +13,7 @@ import Products from "./pages/Products";
 import Categories from "./pages/Categories"; 
 import Storefront from "./pages/Storefront";
 import StorefrontCategory from "./pages/StorefrontCategory";
+import StorefrontCart from "./pages/StorefrontCart";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/categories" element={<Categories />} />
               <Route path="/store" element={<Storefront />} />
               <Route path="/store/category/:categoryId" element={<StorefrontCategory />} />
+              <Route path="/store/cart" element={<StorefrontCart />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
