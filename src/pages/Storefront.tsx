@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, ChevronRight, Loader2, Package } from 'lucide-react';
+import { ChevronRight, Package } from 'lucide-react';
 import { getCategoryImageUrl, Category } from '@/types/category';
 import { Product } from '@/types/product';
 import { getAllCategories } from '@/services/categoryService';
 import { getAllProducts } from '@/services/productService';
 import { useToast } from '@/hooks/use-toast';
-import LoadingScreen from '@/components/ui/loadingScreen'; // Adicione o import
+import LoadingScreen from '@/components/ui/loadingScreen';
 import {
   Pagination,
   PaginationContent,
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/pagination';
 import StorefrontProductCard from '@/components/storefront/StorefrontProductCard';
 import StorefrontProductModal from '@/components/storefront/StorefrontProductModal';
+import StorefrontHeader from '@/components/storefront/StorefrontHeader';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -113,20 +114,7 @@ const Storefront = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Music className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-semibold text-foreground leading-tight">Blue Velvet</span>
-              <span className="text-xs text-muted-foreground">Music Store</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <StorefrontHeader />
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8 flex-1">
