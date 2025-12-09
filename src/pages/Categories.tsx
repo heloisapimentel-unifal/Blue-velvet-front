@@ -387,7 +387,7 @@ const Categories = () => {
           <div className="flex gap-3 w-full sm:w-auto justify-end">
             
             {/* Botão de Reset com função vazia */}
-            <Button variant="outline" size="icon" onClick={handleReset} title="Resetar filtros">
+            <Button variant="outline" size="icon" onClick={handleReset} title="Resetar Dados">
                 <RotateCcw className="w-4 h-4" />
             </Button>
 
