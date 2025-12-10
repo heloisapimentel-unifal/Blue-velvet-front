@@ -46,4 +46,5 @@ export interface ProductFormData {
   height: string;
   length: string;
   cost: string;
+  imageUrl?: string;
 }
