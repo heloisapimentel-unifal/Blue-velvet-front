@@ -113,30 +113,57 @@ const CategoryForm = ({
           />
         </div>
 
-        {/* INPUT DE ARQUIVO (MODIFICADO) */}
-        <div className="space-y-2">
-          <label htmlFor="image">Imagem da Categoria</label>
-          <Input
-            id="image"
-            type="file"
-            accept="image/*"
-            className="cursor-pointer"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setSelectedFile(e.target.files[0]);
-              }
-            }}
-          />
-          {/* Feedback do arquivo selecionado */}
-          {selectedFile ? (
-            <p className="text-sm text-green-600 font-medium">
-              Arquivo selecionado: {selectedFile.name}
-            </p>
-          ) : isEditing && formData.existingImageUrl ? (
-            <p className="text-xs text-muted-foreground">
-              Imagem atual: {formData.existingImageUrl} (Envie outra para substituir)
-            </p>
-          ) : null}
+        {/* INPUT DE ARQUIVO */}
+        <div className="space-y-3">
+          <label htmlFor="image" className="text-sm font-medium text-foreground">Imagem da Categoria</label>
+          
+          {/* Preview da imagem */}
+          <div className="flex items-start gap-4">
+            <div className="w-24 h-24 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+              {selectedFile ? (
+                <img 
+                  src={URL.createObjectURL(selectedFile)} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover"
+                />
+              ) : isEditing && formData.existingImageUrl ? (
+                <img 
+                  src={formData.existingImageUrl} 
+                  alt="Imagem atual" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground text-center px-2">Sem imagem</span>
+              )}
+            </div>
+            
+            <div className="flex-1 space-y-2">
+              <Input
+                id="image"
+                type="file"
+                accept="image/*"
+                className="cursor-pointer"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setSelectedFile(e.target.files[0]);
+                  }
+                }}
+              />
+              {selectedFile ? (
+                <p className="text-sm text-green-600 font-medium">
+                  Nova imagem: {selectedFile.name}
+                </p>
+              ) : isEditing && formData.existingImageUrl ? (
+                <p className="text-xs text-muted-foreground">
+                  Envie outra imagem para substituir a atual
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Formatos aceitos: JPG, PNG, GIF
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">

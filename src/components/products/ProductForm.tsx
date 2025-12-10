@@ -177,27 +177,32 @@ const ProductForm = ({
         </div>
       </div>
 
-      {/* Pricing */}
+      {/* Imagem do Produto */}
       <div className="space-y-4">
         <h4 className="text-sm font-medium text-muted-foreground border-b border-border pb-2">
-          Preços
+          Imagem do Produto
         </h4>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Preço *</label>
-            <Input
-              id="list_price"
-              name="list_price"
-              value={formData.list_price}
-              onChange={handleChange}
-              placeholder="0,00"
-              required
-            />
+        <div className="flex items-start gap-4">
+          <div className="w-24 h-24 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+            {selectedFile ? (
+              <img 
+                src={URL.createObjectURL(selectedFile)} 
+                alt="Preview" 
+                className="w-full h-full object-cover"
+              />
+            ) : isEditing && formData.imageUrl ? (
+              <img 
+                src={formData.imageUrl} 
+                alt="Imagem atual" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground text-center px-2">Sem imagem</span>
+            )}
           </div>
-          {/* 2. INPUT DE ARQUIVO (Imagem) */}
-          <div className="grid gap-2">
-            <label htmlFor="image">Imagem do Produto</label>
+          
+          <div className="flex-1 space-y-2">
             <Input
               id="image"
               type="file"
@@ -211,16 +216,39 @@ const ProductForm = ({
             />
             {selectedFile ? (
               <p className="text-sm text-green-600 font-medium">
-                Arquivo: {selectedFile.name}
+                Nova imagem: {selectedFile.name}
               </p>
-            ) : isEditing ? (
+            ) : isEditing && formData.imageUrl ? (
               <p className="text-xs text-muted-foreground">
-                Deixe vazio para manter a imagem atual.
+                Envie outra imagem para substituir a atual
               </p>
-            ) : null}
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Formatos aceitos: JPG, PNG, GIF
+              </p>
+            )}
           </div>
+        </div>
+      </div>
 
+      {/* Pricing */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-muted-foreground border-b border-border pb-2">
+          Preços
+        </h4>
 
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Preço *</label>
+            <Input
+              id="list_price"
+              name="list_price"
+              value={formData.list_price}
+              onChange={handleChange}
+              placeholder="0,00"
+              required
+            />
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Desconto (%)</label>
             <Input
