@@ -1,245 +1,243 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Adicionei useEffect
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Mail, Lock, User, AlertCircle, Loader2, CheckCircle, Music, ArrowLeft, Disc3 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'Administrator', label: 'Administrador' },
-  { value: 'Sales Manager', label: 'Gerente de Vendas' },
-  { value: 'Editor', label: 'Editor' },
-  { value: 'Assistant', label: 'Assistente' },
-  { value: 'Shipping Manager', label: 'Gerente de Envios' },
-];
+import {
+  Music,
+  Mail,
+  Lock,
+  User,
+  AlertCircle,
+  Loader2,
+  CheckCircle,
+  ArrowLeft,
+} from 'lucide-react';
 
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole | ''>('');
+  const [role, setRole] = useState('ADMIN');
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user, register } = useAuth();
+
   const navigate = useNavigate();
 
-  const isAdmin = user?.role === 'Administrator';
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    if (!token) {
+        // Se não tem token, nem adianta tentar registrar. Joga pro login.
+        navigate('/login');
+    }
+  }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e) => { // Removi a tipagem TS (: React.FormEvent) se for JS puro
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!isAdmin) {
-      setError('Apenas administradores podem registrar novos usuários.');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('A senha deve ter pelo menos 8 caracteres.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
-      return;
-    }
-
-    if (!role) {
-      setError('Selecione um papel para o usuário.');
-      return;
-    }
+     if (password.length < 8) {
+    setError('A senha deve ter pelo menos 8 caracteres.');
+    return;
+  }
 
     setIsLoading(true);
-    const result = await register(email, password, name, role);
-    setIsLoading(false);
 
-    if (result.success) {
-      setSuccess('Usuário registrado com sucesso!');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      setName('');
-      setRole('');
-    } else {
-      setError(result.error || 'Erro ao registrar usuário.');
+    const dadosParaOJava = {
+      name,
+      login: email,
+      password,
+      role,
+    };
+
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+
+    try {
+      const response = await fetch('http://localhost:8080/auth/register', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(dadosParaOJava),
+      });
+
+      if (response.ok) {
+        setSuccess('Usuário registrado com sucesso!');
+        setEmail('');
+        setPassword('');
+        setName('');
+        setRole('ADMIN');
+
+        setTimeout(() => navigate('/login'), 1500);
+      } else {
+        const textoErro = await response.text();
+        setError(`Erro ao registrar: ${textoErro || response.status}`);
+      }
+    } catch {
+      setError('Erro de conexão com o servidor (localhost:8080).');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Botão de Retorno ao Dashboard - Canto Superior Esquerdo */}
-      {isAdmin && (
-        <Button 
-          variant="ghost" 
-          className="absolute top-6 left-6 z-20 text-muted-foreground hover:text-foreground hover:bg-secondary/80 gap-2 transition-all duration-200" 
-          onClick={() => navigate('/dashboard')}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Voltar ao Dashboard</span>
-        </Button>
-      )}
+      {/* Voltar */}
+      <Button
+        variant="ghost"
+        className="absolute top-6 left-6 z-20 gap-2"
+        onClick={() => navigate('/login')}
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Voltar
+      </Button>
 
-      {/* Background elements */}
+      {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-1/3 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
+        <div
+          className="absolute bottom-1/3 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float"
+          style={{ animationDelay: '-3s' }}
+        />
       </div>
 
       <div className="w-full max-w-md px-6 animate-fade-in relative z-10">
-        {/* Logo */}
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <Music className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-1">Registrar Usuário</h1>
-          <p className="text-xs font-medium text-primary/70 tracking-widest uppercase mb-2">Blue Velvet</p>
-          <p className="text-muted-foreground">Cadastre um novo membro da equipe</p>
+          <h1 className="text-3xl font-bold text-foreground mb-1">
+            Registrar Usuário
+          </h1>
+          <p className="text-muted-foreground">
+            Crie o usuário administrador do sistema
+          </p>
         </div>
 
-        {/* Register Card */}
+        {/* Card */}
         <div className="glass-card rounded-2xl p-8 shadow-card">
-          {!isAdmin ? (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
-                <Shield className="w-8 h-8 text-destructive" />
+          <form onSubmit={handleRegister} className="space-y-5">
+            {/* Error */}
+            {error && (
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive animate-fade-in">
+                <AlertCircle className="w-5 h-5" />
+                <p className="text-sm">{error}</p>
               </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">Acesso Restrito</h2>
-              <p className="text-muted-foreground mb-6">
-                Apenas administradores podem registrar novos usuários.
-              </p>
-              <Button asChild variant="outline">
-                <Link to="/login">Fazer Login como Admin</Link>
-              </Button>
+            )}
+
+            {/* Success */}
+            {success && (
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20 text-primary animate-fade-in">
+                <CheckCircle className="w-5 h-5" />
+                <p className="text-sm">{success}</p>
+              </div>
+            )}
+
+            {/* Nome */}
+            <div className="space-y-2">
+              <Label>Nome Completo</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  className="pl-11"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nome do usuário"
+                  required
+                />
+              </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Error Alert */}
-              {error && (
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive animate-fade-in">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm">{error}</p>
-                </div>
-              )}
 
-              {/* Success Alert */}
-              {success && (
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20 text-primary animate-fade-in">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm">{success}</p>
-                </div>
-              )}
+            {/* Email */}
+            <div className="space-y-2">
+              <Label>Email (Login)</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  className="pl-11"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@email.com"
+                  required
+                />
+              </div>
+            </div>
 
-              {/* Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-foreground">Nome Completo</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Nome do usuário"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-11"
-                    required
-                  />
-                </div>
+            {/* Role */}
+            <div className="space-y-2">
+              <Label>Papel (Role)</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="h-11 bg-secondary/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Administrador</SelectItem>
+                  <SelectItem value="SALES_MANAGER">Gerente de Vendas</SelectItem>
+                  <SelectItem value="EDITOR">Editor</SelectItem>
+                  <SelectItem value="ASSISTANT">Assistente</SelectItem>
+                  <SelectItem value="SHIPPING_MANAGER">Gerente de Envio</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Senha */}
+            <div className="space-y-2">
+              <Label>Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                className="pl-11"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Senha forte"
+                required
+                minLength={8}
+                />
               </div>
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">E-mail</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="usuario@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-11"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Role Field */}
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-foreground">Papel (Role)</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                  <SelectTrigger className="h-11 bg-secondary/50 border-border">
-                    <SelectValue placeholder="Selecione um papel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-11"
-                    required
-                    minLength={8}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Mínimo de 8 caracteres</p>
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-foreground">Confirmar Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-11"
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Registrando...
-                  </>
-                ) : (
-                  'Registrar Usuário'
+              {password.length > 0 && password.length < 8 && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive animate-fade-in">
+                    <AlertCircle className="w-5 h-5" />
+                    <p className="text-sm">
+                      A senha deve conter no mínimo 8 caracteres
+                    </p>
+                  </div>
                 )}
-              </Button>
-            </form>
-          )}
+            </div>
 
-          {/* Login Link */}
+            {/* Submit */}
+            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                'Registrar Usuário'
+              )}
+            </Button>
+          </form>
+
+          {/* Login */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Já tem uma conta?{' '}
-            <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+            <Link to="/login" className="text-primary font-medium">
               Login
             </Link>
           </p>
