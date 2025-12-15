@@ -76,7 +76,7 @@ const ReportGenerator = () => {
 
   return (
     <>
-      {/* BOTÃO PRINCIPAL: 
+      {/* BOTÃO :
           Usando o mesmo estilo do botão "Registrar Novo Usuário" 
           (variant="outline" ou "default" conforme sua preferência)
       */}
