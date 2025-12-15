@@ -13,9 +13,11 @@ import {
   Guitar,
   Shield,
   Store,
+  FileText,
   ExternalLink,
 } from 'lucide-react';
 import { useEffect } from 'react';
+import ReportGenerator from '@/automation/ReportGenerator';
 
 /* =========================
    Normalização de Role
@@ -164,12 +166,20 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <Button asChild>
-              <Link to="/register">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Registrar Novo Usuário
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-3 mt-4">
+
+              {/* Botão 1: Registrar */}
+              <Button asChild className="bg-blue-900 hover:bg-blue-800">
+                <Link to="/register">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Registrar Novo Usuário
+                </Link>
+              </Button>
+
+              {/* Botão 2: Seu componente de Relatório */}
+              <ReportGenerator />
+
+            </div>
           </div>
         )}
 
