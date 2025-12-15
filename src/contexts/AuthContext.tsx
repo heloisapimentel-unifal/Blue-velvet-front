@@ -18,8 +18,8 @@ export type UserRole =
 
 export interface User {
   id?: string;
-  email: string; // No Java é 'login', mas aqui usaremos email para facilitar
-  login?: string; // Mantemos login opcional para compatibilidade
+  email: string; 
+  login?: string; 
   name: string;
   role: UserRole;
   token?: string;
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Ao iniciar, verifica se tem usuário salvo (localStorage ou sessionStorage)
+  
   useEffect(() => {
     const storedUser =
       localStorage.getItem('user_data') ||
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  // --- LOGIN REAL CONECTANDO NO JAVA ---
+  // --- LOGIN ---
   const login = async (
     email: string,
     password: string,
@@ -124,10 +124,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      // 1. RECUPERAR O TOKEN (Procura no Local e Session Storage)
       const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
       
-      // Se não tiver token, nem adianta tentar (O Back-end vai barrar)
       if (!token) {
         return { success: false, error: 'Você precisa estar logado para realizar cadastros.' };
       }
@@ -136,7 +134,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
-            // 2. AQUI ESTÁ A MÁGICA: ENVIANDO O TOKEN
             'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify({
@@ -150,7 +147,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.ok) {
         return { success: true };
       } else {
-        // Se der 403 aqui, é porque o token existe mas não é de ADMIN
         if (response.status === 403) {
             return { success: false, error: 'Permissão negada: Apenas administradores podem cadastrar.' };
         }

@@ -38,12 +38,11 @@ const Register = () => {
   useEffect(() => {
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     if (!token) {
-        // Se não tem token, nem adianta tentar registrar. Joga pro login.
         navigate('/login');
     }
   }, [navigate]);
 
-  const handleRegister = async (e) => { // Removi a tipagem TS (: React.FormEvent) se for JS puro
+  const handleRegister = async (e) => { 
     e.preventDefault();
     setError('');
     setSuccess('');
